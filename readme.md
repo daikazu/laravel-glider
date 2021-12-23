@@ -5,7 +5,10 @@
 [![Build Status][ico-travis]][link-travis]
 [![StyleCI][ico-styleci]][link-styleci]
 
-This is where your description should go. Take a look at [contributing.md](contributing.md) to see a to do list.
+
+Glider is a simple package to quickly get started using [Glide](https://glide.thephpleague.com) in your Laravel blade templates. It provides some convienent blade components for generating various img related html tags. This package was heavily inspired Statamic and Spatie Media library. 
+
+Take a look at [contributing.md](contributing.md) to see a to do list.
 
 ## Installation
 
@@ -15,7 +18,76 @@ Via Composer
 $ composer require daikazu/laravel-glider
 ```
 
+## Configuration
+
+
+
 ## Usage
+
+Glider uses native Glide syntax for URLs.
+
+Check out the [Glide API](https://glide.thephpleague.com/2.0/api/quick-reference/) for more details.
+
+
+### Glider URL Builder
+
+```php
+
+// Array syntax
+{{ Glider::url('image.jpg', ['w' => 300, 'h' => 300, 'fit' => 'crop']) }}
+
+// String syntax
+{{ Glider::url('image.jpg', 'w=300&h=300&fit=crop') }}
+
+or
+
+{{ Glider::url('image.jpg?w=300&h=300&fit=crop') }}
+
+```
+
+
+### Glider Blade Components
+
+
+#### <x-glider::img src="image.jpg?w=300&h=300&fit=crop">
+
+#### <x-glider::picture src="image.jpg?w=300&h=300&fit=crop">
+
+#### <x-glider::figure src="image.jpg?w=300&h=300&fit=crop">
+
+
+
+
+### Glider backgroud image srcset style creation.
+
+```php
+
+Glider::backgroundImage('image.jpg')
+
+
+```
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 ## Change log
 
