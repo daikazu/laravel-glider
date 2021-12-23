@@ -2,7 +2,9 @@
 
 namespace Daikazu\LaravelGlider;
 
+use Daikazu\LaravelGlider\Imaging\GlideServer;
 use Illuminate\Support\ServiceProvider;
+use League\Glide\Server;
 
 class LaravelGliderServiceProvider extends ServiceProvider
 {
@@ -13,10 +15,10 @@ class LaravelGliderServiceProvider extends ServiceProvider
      */
     public function boot(): void
     {
-        // $this->loadTranslationsFrom(__DIR__.'/../resources/lang', 'daikazu');
-        // $this->loadViewsFrom(__DIR__.'/../resources/views', 'daikazu');
+        // $this->loadTranslationsFrom(__DIR__.'/../resources/lang', 'glider');
+         $this->loadViewsFrom(__DIR__.'/../resources/views', 'glider');
         // $this->loadMigrationsFrom(__DIR__.'/../database/migrations');
-        // $this->loadRoutesFrom(__DIR__.'/routes.php');
+         $this->loadRoutesFrom(__DIR__.'/routes.php');
 
         // Publishing is only necessary when using the CLI.
         if ($this->app->runningInConsole()) {
@@ -31,11 +33,21 @@ class LaravelGliderServiceProvider extends ServiceProvider
      */
     public function register(): void
     {
-        $this->mergeConfigFrom(__DIR__.'/../config/laravel-glider.php', 'laravel-glider');
+        $this->mergeConfigFrom(__DIR__.'/../config/glider.php', 'glider');
 
         // Register the service the package provides.
+
+        $this->app->singleton(Server::class, function ($app) {
+            return GlideServer::create();
+        });
+
+
         $this->app->singleton('laravel-glider', function ($app) {
-            return new LaravelGlider;
+            return new Glider();
+        });
+
+        $this->app->singleton('glider', function ($app) {
+            return new Glider();
         });
     }
 
@@ -46,7 +58,7 @@ class LaravelGliderServiceProvider extends ServiceProvider
      */
     public function provides()
     {
-        return ['laravel-glider'];
+        return ['laravel-glider', Server::class];
     }
 
     /**
@@ -58,23 +70,23 @@ class LaravelGliderServiceProvider extends ServiceProvider
     {
         // Publishing the configuration file.
         $this->publishes([
-            __DIR__.'/../config/laravel-glider.php' => config_path('laravel-glider.php'),
-        ], 'laravel-glider.config');
+            __DIR__.'/../config/glider.php' => config_path('glider.php'),
+        ], 'glider.config');
 
         // Publishing the views.
         /*$this->publishes([
             __DIR__.'/../resources/views' => base_path('resources/views/vendor/daikazu'),
-        ], 'laravel-glider.views');*/
+        ], 'glider.views');*/
 
         // Publishing assets.
         /*$this->publishes([
             __DIR__.'/../resources/assets' => public_path('vendor/daikazu'),
-        ], 'laravel-glider.views');*/
+        ], 'glider.views');*/
 
         // Publishing the translation files.
         /*$this->publishes([
             __DIR__.'/../resources/lang' => resource_path('lang/vendor/daikazu'),
-        ], 'laravel-glider.views');*/
+        ], 'glider.views');*/
 
         // Registering package commands.
         // $this->commands([]);
