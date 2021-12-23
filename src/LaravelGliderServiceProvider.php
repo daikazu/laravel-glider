@@ -3,6 +3,7 @@
 namespace Daikazu\LaravelGlider;
 
 use Daikazu\LaravelGlider\Imaging\GlideServer;
+use Daikazu\LaravelGlider\View\Components\Picture;
 use Illuminate\Support\ServiceProvider;
 use League\Glide\Server;
 
@@ -17,6 +18,10 @@ class LaravelGliderServiceProvider extends ServiceProvider
     {
         // $this->loadTranslationsFrom(__DIR__.'/../resources/lang', 'glider');
          $this->loadViewsFrom(__DIR__.'/../resources/views', 'glider');
+         $this->loadViewComponentsAs('glider', [
+             Picture::class,
+         ]);
+
         // $this->loadMigrationsFrom(__DIR__.'/../database/migrations');
          $this->loadRoutesFrom(__DIR__.'/routes.php');
 
