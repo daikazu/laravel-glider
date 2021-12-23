@@ -10,15 +10,19 @@
         }
     ],
     "homepage": "https://github.com/daikazu/laravel-glider",
-    "keywords": ["Laravel",
-        "LaravelLaravelGlider", "blade", "glide"],
+    "keywords": [
+        "Laravel",
+        "LaravelLaravelGlider",
+        "blade",
+        "glide"
+    ],
     "require": {
-        "illuminate/support": "~7|~8",
+        "illuminate/support": "~8",
         "league/glide-laravel": "^1.0"
     },
     "require-dev": {
         "phpunit/phpunit": "~9.0",
-        "orchestra/testbench": "~5|~6"
+        "orchestra/testbench": "~6"
     },
     "autoload": {
         "psr-4": {
