@@ -30,7 +30,7 @@ $ composer require daikazu/laravel-glider
 
 ## Configuration
 
-
+TODO
 
 ## Usage
 
@@ -55,28 +55,17 @@ or
 
 ```
 
-
 ### Glider Blade Components
-
-
-#### <x-glider-img src="image.jpg?w=300&h=300&fit=crop">
-
-#### <x-glider-picture src="image.jpg?w=300&h=300&fit=crop">
-
-#### <x-glider-figure src="image.jpg?w=300&h=300&fit=crop">
-
-
-
-
-### Glider background image srcset style creation.
 
 ```php
 
-Glider::backgroundImage('image.jpg')
+<x-glider-img src="image.jpg?w=300&h=300&fit=crop">
 
+<x-glider-picture src="image.jpg?w=300&h=300&fit=crop">
+
+<x-glider-figure src="image.jpg?w=300&h=300&fit=crop">
 
 ```
-
 
 
 ## Contributing
@@ -95,9 +84,6 @@ If you discover any security related issues, please email author@email.com inste
 ## License
 
 MIT. Please see the [license file](license.md) for more information.
-
-[ico-version]: https://img.shields.io/packagist/v/daikazu/laravel-glider.svg?style=flat-square
-[ico-downloads]: https://img.shields.io/packagist/dt/daikazu/laravel-glider.svg?style=flat-square
 
 [link-packagist]: https://packagist.org/packages/daikazu/laravel-glider
 [link-downloads]: https://packagist.org/packages/daikazu/laravel-glider
