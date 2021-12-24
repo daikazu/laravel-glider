@@ -30,7 +30,12 @@ $ composer require daikazu/laravel-glider
 
 ## Configuration
 
-TODO
+Publish Configuration file and modify the setting to your specific setup.
+
+```bash
+$ php artisan vendor:publish --provider="Daikazu\LaravelGlider\LaravelGliderServiceProvider" --tag="glider-config"
+
+```
 
 ## Usage
 

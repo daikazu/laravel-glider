@@ -76,7 +76,7 @@ class LaravelGliderServiceProvider extends ServiceProvider
         // Publishing the configuration file.
         $this->publishes([
             __DIR__.'/../config/glider.php' => config_path('glider.php'),
-        ], 'glider.config');
+        ], 'glider-config');
 
         // Publishing the views.
         /*$this->publishes([
