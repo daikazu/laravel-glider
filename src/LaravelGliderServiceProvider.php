@@ -2,8 +2,12 @@
 
 namespace Daikazu\LaravelGlider;
 
+use Daikazu\LaravelGlider\Console\Commands\ClearGliderCache;
 use Daikazu\LaravelGlider\Imaging\GlideServer;
+use Daikazu\LaravelGlider\View\Components\Figure;
 use Daikazu\LaravelGlider\View\Components\Picture;
+use Daikazu\LaravelGlider\View\Components\Img;
+use Illuminate\Support\Facades\Blade;
 use Illuminate\Support\ServiceProvider;
 use League\Glide\Server;
 
@@ -16,14 +20,16 @@ class LaravelGliderServiceProvider extends ServiceProvider
      */
     public function boot(): void
     {
-        // $this->loadTranslationsFrom(__DIR__.'/../resources/lang', 'glider');
-         $this->loadViewsFrom(__DIR__.'/../resources/views', 'glider');
-         $this->loadViewComponentsAs('glider', [
-             Picture::class,
-         ]);
+        $this->loadViewsFrom(__DIR__.'/../resources/views', 'glider');
+
+        $this->loadViewComponentsAs('glider', [
+            Img::class,
+            Picture::class,
+        ]);
+
 
         // $this->loadMigrationsFrom(__DIR__.'/../database/migrations');
-         $this->loadRoutesFrom(__DIR__.'/routes.php');
+        $this->loadRoutesFrom(__DIR__.'/routes.php');
 
         // Publishing is only necessary when using the CLI.
         if ($this->app->runningInConsole()) {
@@ -46,14 +52,13 @@ class LaravelGliderServiceProvider extends ServiceProvider
             return GlideServer::create();
         });
 
-
         $this->app->singleton('laravel-glider', function ($app) {
             return new Glider();
         });
 
-        $this->app->singleton('glider', function ($app) {
-            return new Glider();
-        });
+//        $this->app->singleton('glider', function ($app) {
+//            return new Glider();
+//        });
     }
 
     /**
@@ -79,21 +84,12 @@ class LaravelGliderServiceProvider extends ServiceProvider
         ], 'glider-config');
 
         // Publishing the views.
-        /*$this->publishes([
-            __DIR__.'/../resources/views' => base_path('resources/views/vendor/daikazu'),
-        ], 'glider.views');*/
+        $this->publishes([
+            __DIR__.'/../resources/views' => base_path('resources/views/vendor/glider'),
+        ], 'glider-views');
 
-        // Publishing assets.
-        /*$this->publishes([
-            __DIR__.'/../resources/assets' => public_path('vendor/daikazu'),
-        ], 'glider.views');*/
-
-        // Publishing the translation files.
-        /*$this->publishes([
-            __DIR__.'/../resources/lang' => resource_path('lang/vendor/daikazu'),
-        ], 'glider.views');*/
 
         // Registering package commands.
-        // $this->commands([]);
+         $this->commands([ClearGliderCache::class]);
     }
 }

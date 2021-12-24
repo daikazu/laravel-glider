@@ -6,8 +6,6 @@ Contributions are accepted via Pull Requests on [Github](https://github.com/daik
 
 # Things you could do
 If you want to contribute but do not know where to start, this list provides some starting points.
-- Add HTML figure component
-- Add background image style generator
 - placeholder images for picture component 
 - Write a comprehensive ReadMe
 

@@ -4,15 +4,17 @@
 
 <p align="center">
     <a href="https://packagist.org/packages/daikazu/laravel-glider">
-        <img src="https://img.shields.io/packagist/dt/daikazu/laravel-glider?style=flat-square" alt="Total Downloads">
+        <img src="https://img.shields.io/github/downloads/daikazu/laravel-glider/total?style=for-the-badge" alt="Total Downloads">
     </a>
     <a href="https://packagist.org/packages/daikazu/laravel-glider">
-        <img src="https://img.shields.io/packagist/v/daikazu/laravel-glider?style=flat-square" alt="Latest Stable Version">
+        <img src="https://img.shields.io/github/v/release/daikazu/laravel-glider?include_prereleases&style=for-the-badge" alt="Latest Version">
     </a>
     <a href="https://packagist.org/packages/daikazu/laravel-glider">
-        <img src="https://img.shields.io/packagist/l/daikazu/laravel-glider?style=flat-square" alt="License">
+        <img src="https://img.shields.io/github/license/daikazu/laravel-glider?style=for-the-badge" alt="License">
     </a>
 </p>
+
+
 
 # Laravel Glider
 
@@ -68,8 +70,17 @@ or
 
 <x-glider-picture src="image.jpg?w=300&h=300&fit=crop">
 
-<x-glider-figure src="image.jpg?w=300&h=300&fit=crop">
+```
 
+### Responsive background image CSS class
+```phpregexp
+{{ Glider::backgroundClass('bg-class', 'image.jpg') }}
+```
+
+
+### Clear Glider image cache
+```bash
+php artisan glider:clear
 ```
 
 

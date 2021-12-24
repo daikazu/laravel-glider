@@ -68,9 +68,9 @@ return [
     |
     */
 
-    'cache'      => env('SAVE_CACHED_IMAGES', true),
+    'cache'             => env('SAVE_CACHED_IMAGES', true),
     'cache_path_prefix' => '.cache',
-    'cache_path' => storage_path('app/glide'), //defal
+    'cache_path'        => storage_path('app/glide'), //default caache location
 
     /*
     |--------------------------------------------------------------------------

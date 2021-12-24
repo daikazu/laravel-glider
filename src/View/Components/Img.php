@@ -2,14 +2,19 @@
 
 namespace Daikazu\LaravelGlider\View\Components;
 
+
 use Illuminate\Support\Str;
 use Illuminate\View\Component;
 
-class Picture extends Component
+class Img extends Component
 {
     public $src;
-    public $mime_type;
+
+    public bool $responsive;
+
     public $ext;
+
+    public $mime_type;
 
 
     /**
@@ -17,13 +22,12 @@ class Picture extends Component
      *
      * @return void
      */
-    public function __construct($src)
+    public function __construct($src, $responsive = false)
     {
-
         $this->src = $src;
+        $this->responsive = $responsive;
 
         $this->ext = (string) Str::of($src)->afterLast('.')->before('?');
-
         $this->getMimetypeByUrl();
     }
 
@@ -34,7 +38,7 @@ class Picture extends Component
      */
     public function render()
     {
-        return view('glider::components.picture');
+        return view('glider::components.img');
     }
 
     private function getMimetypeByUrl()
@@ -49,6 +53,5 @@ class Picture extends Component
         };
 
     }
-
 
 }

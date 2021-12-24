@@ -25,8 +25,18 @@ class Glider
 
         $urlBuilder = UrlBuilderFactory::create('/img/', Config::get('glider.sign_key'));
 
-        if (!$absolute) return $urlBuilder->getUrl($path, $params);
+        if (!$absolute) {
+            return $urlBuilder->getUrl($path, $params);
+        }
 
         return url('/').$urlBuilder->getUrl($path, $params);
     }
+
+
+    public function backgroundClass($class_name, $src)
+    {
+        return view('glider::_background_image_class')->with(['src'=> $src, 'class_name' => $class_name] );
+    }
+
+
 }
