@@ -4,7 +4,7 @@
 
 <p align="center">
     <a href="https://packagist.org/packages/daikazu/laravel-glider">
-        <img src="https://img.shields.io/github/downloads/daikazu/laravel-glider/total?style=for-the-badge" alt="Total Downloads">
+        <img src="https://img.shields.io/packagist/dt/daikazu/laravel-glider?style=for-the-badge" alt="Total Downloads">
     </a>
     <a href="https://packagist.org/packages/daikazu/laravel-glider">
         <img src="https://img.shields.io/github/v/release/daikazu/laravel-glider?include_prereleases&style=for-the-badge" alt="Latest Version">
