@@ -29,7 +29,12 @@ class GlideController extends Controller
 
         $this->validateSignature();
 
-        return $this->server->getImageResponse($this->request->path(), $this->request->all());
+        try {
+            return $this->server->getImageResponse($this->request->path(), $this->request->all());
+
+        } catch (FileNotFoundException $e) {
+            abort(404);
+        }
 
     }
 
@@ -40,13 +45,12 @@ class GlideController extends Controller
             return;
         }
 
-        $path = Str::after($this->request->url(), url('/'));
-
+       
         try {
-            SignatureFactory::create(Config::get('glider.sign_key'))->validateRequest($path,
-                $this->request->query->all());
+            SignatureFactory::create(Config::get('glider.sign_key'))
+                ->validateRequest($this->request->path(), $this->request->query->all());
         } catch (SignatureException $e) {
-            abort(400, $e->getMessage());
+            abort(403);
         }
 
     }

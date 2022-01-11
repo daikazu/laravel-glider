@@ -8,7 +8,7 @@ use League\Glide\Urls\UrlBuilderFactory;
 
 class Glider
 {
-    public function url($path, string|array $params = [], $absolute = true)
+    public function url($path, string|array $params = [])
     {
         if (is_string($params)) {
             parse_str($params, $params);
@@ -23,13 +23,9 @@ class Glider
             $params = array_merge($params, $additional_params);
         }
 
-        $urlBuilder = UrlBuilderFactory::create('/img/', Config::get('glider.sign_key'));
+        $urlBuilder = UrlBuilderFactory::create('/'.Config::get('glider.route').'/', Config::get('glider.sign_key'));
 
-        if (!$absolute) {
-            return $urlBuilder->getUrl($path, $params);
-        }
-
-        return url('/').$urlBuilder->getUrl($path, $params);
+        return $urlBuilder->getUrl($path, $params);
     }
 
 
