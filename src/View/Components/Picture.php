@@ -41,7 +41,7 @@ class Picture extends Component
     {
 
         $this->mime_type = match ($this->ext) {
-            'jpg', 'jpeg' => 'image/jpeg',
+            'jpg', 'jpeg', => 'image/jpeg',
             'png' => 'image/png',
             'webp' => 'image/webp',
             'gif' => 'image/gif',

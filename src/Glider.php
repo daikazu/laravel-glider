@@ -8,6 +8,13 @@ use League\Glide\Urls\UrlBuilderFactory;
 
 class Glider
 {
+
+    /**
+     * Create a Glide URL
+     * @param $path
+     * @param  string|array  $params
+     * @return string
+     */
     public function url($path, string|array $params = [])
     {
         if (is_string($params)) {
@@ -23,7 +30,14 @@ class Glider
             $params = array_merge($params, $additional_params);
         }
 
-        $urlBuilder = UrlBuilderFactory::create('/'.Config::get('glider.route').'/', Config::get('glider.sign_key'));
+
+        if (Config::get('glider.secure')) {
+            $urlBuilder = UrlBuilderFactory::create('/'.Config::get('glider.route').'/',
+                Config::get('glider.sign_key'));
+        } else {
+            $urlBuilder = UrlBuilderFactory::create('/'.Config::get('glider.route').'/');
+        }
+
 
         return $urlBuilder->getUrl($path, $params);
     }
@@ -31,7 +45,7 @@ class Glider
 
     public function backgroundClass($class_name, $src)
     {
-        return view('glider::_background_image_class')->with(['src'=> $src, 'class_name' => $class_name] );
+        return view('glider::_background_image_class')->with(['src' => $src, 'class_name' => $class_name]);
     }
 
 

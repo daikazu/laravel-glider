@@ -45,7 +45,6 @@ class LaravelGliderServiceProvider extends ServiceProvider
     public function register(): void
     {
         $this->mergeConfigFrom(__DIR__.'/../config/glider.php', 'glider');
-
         // Register the service the package provides.
 
         $this->app->singleton(Server::class, function ($app) {
@@ -56,9 +55,6 @@ class LaravelGliderServiceProvider extends ServiceProvider
             return new Glider();
         });
 
-//        $this->app->singleton('glider', function ($app) {
-//            return new Glider();
-//        });
     }
 
     /**
