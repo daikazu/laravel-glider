@@ -32,13 +32,14 @@ return [
 
 
     /*
-   |--------------------------------------------------------------------------
-   | Route Prefix
-   |--------------------------------------------------------------------------
-   |
-   | The route prefix for serving HTTP based manipulated images through Glide.
-   |
-   */
+    |--------------------------------------------------------------------------
+    | Image size limit
+    |--------------------------------------------------------------------------
+    |
+    | Limit how large images can be generated. The following setting will set
+    | the maximum allowed total image size, in pixels.
+    |
+    */
 
     'max_image_size' => env('GLIDE_MAX_IMAGE_SIZE', 2000 * 2000),
 
