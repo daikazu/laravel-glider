@@ -21,7 +21,7 @@ class GlideServer
             'watermarks'             => Config::get('glider.watermarks'),
             'watermarks_path_prefix' => Config::get('glider.watermarks_path_prefix'),
             'base_url'               => Config::get('glider.route'),
-            'max_image_size'         => 2000 * 2000,
+            'max_image_size'         => Config::get('glider.max_image_size'),
             'driver'                 => Config::get('glider.driver'),
             'presets'                => self::manipulationPresets(),
             'response'               => new ResponseFactory(app('request')),

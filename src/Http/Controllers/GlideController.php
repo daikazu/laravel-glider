@@ -5,7 +5,8 @@ namespace Daikazu\LaravelGlider\Http\Controllers;
 use App\Http\Controllers\Controller;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Config;
-use Illuminate\Support\Str;
+use League\Glide\Filesystem\FileNotFoundException;
+use League\Glide\Filesystem\FilesystemException;
 use League\Glide\Server;
 use League\Glide\Signatures\SignatureException;
 use League\Glide\Signatures\SignatureFactory;
@@ -18,7 +19,6 @@ class GlideController extends Controller
 
     public function __construct(Server $server, Request $request)
     {
-
         $this->server = $server;
         $this->request = $request;
     }
@@ -32,10 +32,9 @@ class GlideController extends Controller
         try {
             return $this->server->getImageResponse($this->request->path(), $this->request->all());
 
-        } catch (FileNotFoundException $e) {
-            abort(404);
+        } catch (FileNotFoundException|FilesystemException $e) {
+            abort(404, $e->getMessage());
         }
-
     }
 
 
@@ -45,7 +44,7 @@ class GlideController extends Controller
             return;
         }
 
-       
+
         try {
             SignatureFactory::create(Config::get('glider.sign_key'))
                 ->validateRequest($this->request->path(), $this->request->query->all());

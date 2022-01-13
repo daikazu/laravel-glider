@@ -8,7 +8,7 @@ return [
     |--------------------------------------------------------------------------
     |
     | The route prefix for serving HTTP based manipulated images through Glide.
-    |     |
+    |
     */
 
     'source'             => resource_path(),
@@ -30,19 +30,34 @@ return [
 
     'route' => 'img',
 
+
+    /*
+   |--------------------------------------------------------------------------
+   | Route Prefix
+   |--------------------------------------------------------------------------
+   |
+   | The route prefix for serving HTTP based manipulated images through Glide.
+   |
+   */
+
+    'max_image_size' => env('GLIDE_MAX_IMAGE_SIZE', 2000 * 2000),
+
+
     /*
     |--------------------------------------------------------------------------
     | Require Glide security token
     |--------------------------------------------------------------------------
     |
     | With this option enabled, you are protecting your website from mass image
-    | resize attacks. You will need to generate tokens using Glider::url('image.jpg')
-    | but may want to disable this while in development to tinker.
+    | resize attacks. We recommend using a 128 character (or larger) signing
+    | key to prevent trivial key attacks but may want to disable this while
+    | in development to tinker.
     |
     */
 
     'secure'   => true,
-    'sign_key' => env('GLIDE_SIGN_KEY', 'MY_SUPER_SECURE_SIGN_KEY'),
+    'sign_key' => env('GLIDE_SIGN_KEY',
+        'xa9uSX5l1HCR7F/2ywqLU66NZtp0q+dDR/x3c53saR935zBfUpFgv15kJF1rJGkk4VNO/yKpKCDknDdwXyPZABW7VLGvVc2+8oyl1QOCYwbVtjn/tPCiCI8fNNnXJQRVP6QnHi/CB4ey7Vaaf/tPkZrPntZCGVFiP3utmvXBam8='),
 
 
     /*
@@ -70,7 +85,7 @@ return [
 
     'cache'             => env('SAVE_CACHED_IMAGES', true),
     'cache_path_prefix' => '.cache',
-    'cache_path'        => storage_path('app/glide'), //default caache location
+    'cache_path'        => storage_path('app/glide'), //default cache location
 
     /*
     |--------------------------------------------------------------------------
