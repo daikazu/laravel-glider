@@ -27,7 +27,7 @@ Take a look at [contributing.md](contributing.md) to see a to do list.
 Via Composer
 
 ``` bash
-$ composer require daikazu/laravel-glider
+composer require daikazu/laravel-glider
 ```
 
 ## Configuration
@@ -35,9 +35,26 @@ $ composer require daikazu/laravel-glider
 Publish Configuration file and modify the setting to your specific setup.
 
 ```bash
-$ php artisan vendor:publish --provider="Daikazu\LaravelGlider\LaravelGliderServiceProvider" --tag="glider-config"
+php artisan vendor:publish --provider="Daikazu\LaravelGlider\LaravelGliderServiceProvider" --tag="glider-config"
 
 ```
+
+
+Adjust the configuration file as needed for your setup.
+
+The default is assuming your files are coming from `/resources/assets/` folder in your project. 
+
+Note: be sure that you also have the appropriate watermarks folder.
+
+```php
+'source'             => resource_path(),
+'source_path_prefix' => 'assets',
+
+
+'watermarks'             => resource_path(),
+'watermarks_path_prefix' => 'assets/watermarks',
+```
+
 
 ## Usage
 
@@ -82,6 +99,38 @@ or
 ```bash
 php artisan glider:clear
 ```
+
+
+## Troubleshooting
+
+### Browser return 404s when using Nginx and custom static caching config
+
+Make sure to NOT include your Glide route in your static caching configuration.
+
+```
+BROKEN EXAMPLE
+
+# 
+location ~*  \.(jpg|jpeg|png|ico|css|js|pdf|woff2)$ {
+     expires 1y;
+     add_header Cache-Control "public, no-transform";
+ }
+
+
+WORKING EXAMPLE SETTINGS
+
+# Only cache static assets limited to to /public/assets/ folder
+location ~*  ^/assets/.*\.(jpg|jpeg|png)$ {
+    expires 1y;
+    add_header Cache-Control "public, no-transform";
+}
+
+location ~*  \.(ico|css|js|pdf|woff2)$ {
+    expires 1y;
+    add_header Cache-Control "public, no-transform";
+}
+```
+
 
 
 ## Contributing

@@ -4,7 +4,7 @@ return [
 
     /*
     |--------------------------------------------------------------------------
-    | Route Prefixes
+    | Route Prefixes and Sources
     |--------------------------------------------------------------------------
     |
     | The route prefix for serving HTTP based manipulated images through Glide.
