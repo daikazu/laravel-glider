@@ -81,13 +81,16 @@ or
 
 ### Glider Blade Components
 
+THe following components use the `width` attribute to prevent the generation of srcset image that are larger than the original image.
+
 ```php
 
-<x-glider-img src="image.jpg?w=300&h=300&fit=crop">
+<x-glider-img src="image.jpg?w=300&h=300&fit=crop" width="300" height="300" >
 
-<x-glider-picture src="image.jpg?w=300&h=300&fit=crop">
+<x-glider-picture src="image.jpg?w=300&h=300&fit=crop" width="300" height="300" >
 
 ```
+ 
 
 ### Responsive background image CSS class
 ```phpregexp
