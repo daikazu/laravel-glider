@@ -56,7 +56,7 @@ return [
     |
     */
 
-    'secure'   => true,
+    'secure'   => env('GLIDE_SECURE' true),
     'sign_key' => env('GLIDE_SIGN_KEY',
         'xa9uSX5l1HCR7F/2ywqLU66NZtp0q+dDR/x3c53saR935zBfUpFgv15kJF1rJGkk4VNO/yKpKCDknDdwXyPZABW7VLGvVc2+8oyl1QOCYwbVtjn/tPCiCI8fNNnXJQRVP6QnHi/CB4ey7Vaaf/tPkZrPntZCGVFiP3utmvXBam8='),
 
@@ -112,6 +112,6 @@ return [
         'lg'       => ['w' => 1280, 'h' => 10000, 'q' => 85, 'fit' => 'contain'],
         'xl'       => ['w' => 1440, 'h' => 10000, 'q' => 95, 'fit' => 'contain'],
         '2xl'      => ['w' => 1680, 'h' => 10000, 'q' => 95, 'fit' => 'contain'],
-    ],
+    ]
 
 ];
