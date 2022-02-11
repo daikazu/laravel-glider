@@ -56,7 +56,7 @@ return [
     |
     */
 
-    'secure'   => env('GLIDE_SECURE' true),
+    'secure'   => env('GLIDE_SECURE', true),
     'sign_key' => env('GLIDE_SIGN_KEY',
         'xa9uSX5l1HCR7F/2ywqLU66NZtp0q+dDR/x3c53saR935zBfUpFgv15kJF1rJGkk4VNO/yKpKCDknDdwXyPZABW7VLGvVc2+8oyl1QOCYwbVtjn/tPCiCI8fNNnXJQRVP6QnHi/CB4ey7Vaaf/tPkZrPntZCGVFiP3utmvXBam8='),
 
