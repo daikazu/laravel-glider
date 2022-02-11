@@ -1,0 +1,5 @@
+### Composer template
+composer.phar
+/vendor/
+/.idea
+/.vscode
