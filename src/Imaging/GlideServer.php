@@ -4,13 +4,14 @@ namespace Daikazu\LaravelGlider\Imaging;
 
 use Illuminate\Support\Arr;
 use Illuminate\Support\Facades\Config;
+use League\Glide\Server;
 use League\Glide\ServerFactory;
 
 
 class GlideServer
 {
 
-    public static function create()
+    public static function create(): Server
     {
 
         return ServerFactory::create([
@@ -36,7 +37,7 @@ class GlideServer
             : storage_path('app/glide');
     }
 
-    private static function manipulationPresets()
+    private static function manipulationPresets(): array
     {
 
         return collect(config('glider.presets', []))

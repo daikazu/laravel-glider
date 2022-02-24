@@ -15,7 +15,7 @@ class Glider
      * @param  string|array  $params
      * @return string
      */
-    public function url($path, string|array $params = [])
+    public function url($path, string|array $params = []): string
     {
         if (is_string($params)) {
             parse_str($params, $params);
@@ -38,6 +38,8 @@ class Glider
             $urlBuilder = UrlBuilderFactory::create('/'.Config::get('glider.route').'/');
         }
 
+
+        ray($urlBuilder->getUrl($path, $params));
 
         return $urlBuilder->getUrl($path, $params);
     }

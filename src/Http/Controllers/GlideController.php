@@ -19,6 +19,7 @@ class GlideController extends Controller
 
     public function __construct(Server $server, Request $request)
     {
+
         $this->server = $server;
         $this->request = $request;
     }

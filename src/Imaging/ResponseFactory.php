@@ -2,49 +2,40 @@
 
 namespace Daikazu\LaravelGlider\Imaging;
 
-use League\Flysystem\FilesystemInterface;
+
+use League\Flysystem\FilesystemOperator;
 use League\Glide\Responses\ResponseFactoryInterface;
+use League\Glide\Responses\SymfonyResponseFactory;
 use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\HttpFoundation\StreamedResponse;
 
-class ResponseFactory implements ResponseFactoryInterface
+class ResponseFactory extends SymfonyResponseFactory
 {
-    /**
-     * Request object to check "is not modified".
-     *
-     * @var Request|null
-     */
-    protected $request;
 
-    /**
-     * Create SymfonyResponseFactory instance.
-     *
-     * @param  Request|null  $request  Request object to check "is not modified".
-     */
-    public function __construct(Request $request = null)
-    {
-        $this->request = $request;
-    }
 
     /**
      * Create the response.
      *
-     * @param  FilesystemInterface  $cache  The cache file system.
-     * @param  string  $path  The cached file path.
+     * @param  FilesystemOperator  $cache  Cache file system.
+     * @param  string  $path  Cached file path.
      * @return StreamedResponse The response object.
+     * @throws \League\Flysystem\FilesystemException
      */
-    public function create(FilesystemInterface $cache, $path)
+    public function create(FilesystemOperator $cache, $path): StreamedResponse
     {
+
         $stream = $cache->readStream($path);
         $response = new StreamedResponse();
-        $response->headers->set('Content-Type', $cache->getMimetype($path));
-        $response->headers->set('Content-Length', $cache->getSize($path));
+        $response->headers->set('Content-Type', $cache->mimeType($path));
+        $response->headers->set('Content-Length', $cache->fileSize($path));
         $response->setPublic();
         $response->setMaxAge(31536000);
         $response->setExpires(date_create()->modify('+1 years'));
 
+
+
         if ($this->request) {
-            $response->setLastModified(date_create()->setTimestamp($cache->getTimestamp($path)));
+            $response->setLastModified(date_create()->setTimestamp($cache->lastModified($path)));
             $response->isNotModified($this->request);
         }
 
