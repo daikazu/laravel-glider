@@ -38,9 +38,6 @@ class Glider
             $urlBuilder = UrlBuilderFactory::create('/'.Config::get('glider.route').'/');
         }
 
-
-        ray($urlBuilder->getUrl($path, $params));
-
         return $urlBuilder->getUrl($path, $params);
     }
 
