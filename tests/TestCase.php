@@ -2,9 +2,9 @@
 
 namespace Daikazu\LaravelGlider\Tests;
 
+use Daikazu\LaravelGlider\LaravelGliderServiceProvider;
 use Illuminate\Database\Eloquent\Factories\Factory;
 use Orchestra\Testbench\TestCase as Orchestra;
-use Daikazu\LaravelGlider\LaravelGliderServiceProvider;
 
 class TestCase extends Orchestra
 {
@@ -13,7 +13,7 @@ class TestCase extends Orchestra
         parent::setUp();
 
         Factory::guessFactoryNamesUsing(
-            fn (string $modelName) => 'Daikazu\\LaravelGlider\\Database\\Factories\\'.class_basename($modelName).'Factory'
+            fn (string $modelName) => 'Daikazu\\LaravelGlider\\Database\\Factories\\' . class_basename($modelName) . 'Factory'
         );
     }
 

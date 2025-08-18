@@ -2,9 +2,9 @@
 
 namespace Daikazu\LaravelGlider;
 
+use Daikazu\LaravelGlider\Commands\LaravelGliderCommand;
 use Spatie\LaravelPackageTools\Package;
 use Spatie\LaravelPackageTools\PackageServiceProvider;
-use Daikazu\LaravelGlider\Commands\LaravelGliderCommand;
 
 class LaravelGliderServiceProvider extends PackageServiceProvider
 {
