@@ -13,6 +13,7 @@ return RectorConfig::configure()
     ->withPaths([
         __DIR__ . '/config',
         __DIR__ . '/resources',
+        __DIR__ . '/src',
     ])
     ->withSkip([
         AddOverrideAttributeToOverriddenMethodsRector::class,
