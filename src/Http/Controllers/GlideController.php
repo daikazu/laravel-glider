@@ -1,117 +1,33 @@
 <?php
 
+declare(strict_types=1);
+
 namespace Daikazu\LaravelGlider\Http\Controllers;
 
-use App\Http\Controllers\Controller;
+use Daikazu\LaravelGlider\Facades\Glide;
 use Illuminate\Http\Request;
-use Illuminate\Support\Facades\Config;
 use League\Glide\Filesystem\FileNotFoundException;
 use League\Glide\Filesystem\FilesystemException;
 use League\Glide\Server;
-use League\Glide\Signatures\SignatureException;
-use League\Glide\Signatures\SignatureFactory;
+use Symfony\Component\HttpFoundation\Response;
+use Symfony\Component\HttpKernel\Exception\NotFoundHttpException;
 
-
-class GlideController extends Controller
+class GlideController
 {
-    private $server;
-    private $request;
-
-    public function __construct(Server $server, Request $request)
+    public function __invoke(Request $request, Server $server, string $encodedPath, string $encodedParams, string $extension): Response
     {
+        $path = Glide::decodePath($encodedPath);
+        $params = Glide::decodeParams($encodedParams);
+        $params['fm'] ??= $extension;
+        $sourceFilesystem = Glide::getSourceFilesystem($path);
 
-        $this->server = $server;
-        $this->request = $request;
-    }
-
-
-    public function show()
-    {
-
-        $this->validateSignature();
+        $server->setSource($sourceFilesystem);
+        $server->setCachePathCallable(fn (string $path, array $params = []): string => Glide::getCachePath($path, $params));
 
         try {
-            return $this->server->getImageResponse($this->request->path(), $this->request->all());
-
-        } catch (FileNotFoundException|FilesystemException $e) {
-            abort(404, $e->getMessage());
+            return $server->getImageResponse($path, $params);
+        } catch (FileNotFoundException | FilesystemException) {
+            throw new NotFoundHttpException;
         }
     }
-
-
-    private function validateSignature()
-    {
-        if (!Config::get('glider.secure')) {
-            return;
-        }
-
-
-        try {
-            SignatureFactory::create(Config::get('glider.sign_key'))
-                ->validateRequest($this->request->path(), $this->request->query->all());
-        } catch (SignatureException $e) {
-            abort(403);
-        }
-
-    }
-
-
-
-
-
-
-
-//    private function generateBy($type, $item)
-//    {
-//        $method = 'generateBy'.ucfirst($type);
-//
-//        try {
-//            return $this->generator->$method($item, $this->request->all());
-//        } catch (FileNotFoundException $e) {
-////            throw new NotFoundHttpException;
-//        }
-//    }
-
-//    public function generateByPath($path)
-//    {
-//        $this->validateSignature();
-//
-//        // If the auto crop setting is enabled, we will attempt to resolve an asset from the
-//        // given path in order to get its focal point. A little overhead for convenience.
-//        if (Config::get('glider.auto_crop')) {
-////            if ($asset = Asset::find(Str::ensureLeft($path, '/'))) {
-////                return $this->createResponse($this->generateBy('asset', $asset));
-////            }
-//        }
-//
-//        return $this->createResponse($this->generateBy('path', $path));
-//    }
-
-//    public function generateByUrl($url)
-//    {
-//        $this->validateSignature();
-//
-//        $url = base64_decode($url);
-//
-//        return $this->createResponse($this->generateBy('url', $url));
-//    }
-
-
-//    public function generateByAsset($encoded)
-//    {
-//        $this->validateSignature();
-//
-//        $decoded = base64_decode($encoded);
-//
-//        // The string before the first slash is the container
-//        [$container, $path] = explode('/', $decoded, 2);
-//
-//        $asset = AssetContainer::find($container)->asset($path);
-//
-//        throw_unless($asset, new NotFoundHttpException);
-//
-//        return $this->createResponse($this->generateBy('asset', $asset));
-//    }
-
-
 }

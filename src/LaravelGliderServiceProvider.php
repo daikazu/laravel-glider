@@ -1,91 +1,62 @@
 <?php
 
+declare(strict_types=1);
+
 namespace Daikazu\LaravelGlider;
 
-use Daikazu\LaravelGlider\Console\Commands\ClearGliderCache;
-use Daikazu\LaravelGlider\Imaging\GlideServer;
-use Daikazu\LaravelGlider\View\Components\Figure;
-use Daikazu\LaravelGlider\View\Components\Picture;
-use Daikazu\LaravelGlider\View\Components\Img;
-use Illuminate\Support\Facades\Blade;
-use Illuminate\Support\ServiceProvider;
+use Daikazu\LaravelGlider\Commands\ClearGlideCacheCommand;
+use Daikazu\LaravelGlider\Components\BgResponsive;
+use Daikazu\LaravelGlider\Components\Img;
+use Daikazu\LaravelGlider\Components\ImgResponsive;
+use Daikazu\LaravelGlider\Facades\Glide;
+use Daikazu\LaravelGlider\Factories\ResponseFactory;
+use Illuminate\Contracts\Foundation\Application;
+use Illuminate\Routing\UrlGenerator;
 use League\Glide\Server;
+use League\Glide\ServerFactory;
+use League\Glide\Signatures\SignatureFactory;
+use League\Glide\Signatures\SignatureInterface;
+use League\Glide\Urls\UrlBuilder;
+use League\Glide\Urls\UrlBuilderFactory;
+use Spatie\LaravelPackageTools\Package;
+use Spatie\LaravelPackageTools\PackageServiceProvider;
 
-class LaravelGliderServiceProvider extends ServiceProvider
+class LaravelGliderServiceProvider extends PackageServiceProvider
 {
-    /**
-     * Perform post-registration booting of services.
-     *
-     * @return void
-     */
-    public function boot(): void
+    public function configurePackage(Package $package): void
     {
-        $this->loadViewsFrom(__DIR__.'/../resources/views', 'glider');
-
-        $this->loadViewComponentsAs('glider', [
-            Img::class,
-            Picture::class,
-        ]);
-
-
-        // $this->loadMigrationsFrom(__DIR__.'/../database/migrations');
-        $this->loadRoutesFrom(__DIR__.'/routes.php');
-
-        // Publishing is only necessary when using the CLI.
-        if ($this->app->runningInConsole()) {
-            $this->bootForConsole();
-        }
+        /*
+         * This class is a Package Service Provider
+         *
+         * More info: https://github.com/spatie/laravel-package-tools
+         */
+        $package
+            ->name('laravel-glider')
+            ->hasConfigFile()
+            ->hasViews('laravel-glider')
+            ->hasViewComponents('glide', Img::class, ImgResponsive::class, BgResponsive::class)
+            ->hasRoute('web')
+            ->hasCommand(ClearGlideCacheCommand::class);
     }
 
-    /**
-     * Register any package services.
-     *
-     * @return void
-     */
-    public function register(): void
+    public function packageBooted(): void
     {
-        $this->mergeConfigFrom(__DIR__.'/../config/glider.php', 'glider');
-        // Register the service the package provides.
 
-        $this->app->singleton(Server::class, function ($app) {
-            return GlideServer::create();
-        });
+        // inject the glider link in the filesystem links config array while preserving the existing ones
+        config(['filesystems.links' => array_merge(config('filesystems.links'), [public_path(config('glider.base_url')) => storage_path('app/public')])]);
+        //
+        $this->app->singleton(Glide::class, GlideService::class);
 
-        $this->app->singleton('laravel-glider', function ($app) {
-            return new Glider();
-        });
+        $this->app->instance(SignatureInterface::class, SignatureFactory::create((string) config('glider.sign_key', '')));
 
-    }
+        $this->app->bind(UrlBuilder::class, fn (Application $app): UrlBuilder => UrlBuilderFactory::create(
+            $app->make(UrlGenerator::class)->route('glide', ['path' => '/']),
+            config('glider.sign_key')
+        ));
 
-    /**
-     * Get the services provided by the provider.
-     *
-     * @return array
-     */
-    public function provides()
-    {
-        return ['laravel-glider', Server::class];
-    }
+        $this->app->bind(Server::class, fn (Application $app): Server => ServerFactory::create(
+            array_merge(config('glider'), ['response' => $app->make(ResponseFactory::class)])
+        ));
 
-    /**
-     * Console-specific booting.
-     *
-     * @return void
-     */
-    protected function bootForConsole(): void
-    {
-        // Publishing the configuration file.
-        $this->publishes([
-            __DIR__.'/../config/glider.php' => config_path('glider.php'),
-        ], 'glider-config');
-
-        // Publishing the views.
-        $this->publishes([
-            __DIR__.'/../resources/views' => base_path('resources/views/vendor/glider'),
-        ], 'glider-views');
-
-
-        // Registering package commands.
-         $this->commands([ClearGliderCache::class]);
     }
 }

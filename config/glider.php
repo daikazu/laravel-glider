@@ -1,117 +1,352 @@
 <?php
 
+/*
+ * Configuration for Laravel Glider
+ *
+ * This file contains all configuration options for the Laravel Glider package,
+ * which provides on-the-fly image manipulation using League/Glide.
+ */
+
 return [
 
     /*
     |--------------------------------------------------------------------------
-    | Route Prefixes and Sources
+    | Base URL for Image Routes
     |--------------------------------------------------------------------------
     |
-    | The route prefix for serving HTTP based manipulated images through Glide.
+    | This setting controls the base URL prefix for all image manipulation routes.
+    | Images will be served from URLs like: /img/encoded_path/encoded_params.ext
     |
-    */
-
-    'source'             => resource_path(),
-    'source_path_prefix' => 'assets',
-
-
-    'watermarks'             => resource_path(),
-    'watermarks_path_prefix' => 'assets/watermarks',
-
-
-    /*
-    |--------------------------------------------------------------------------
-    | Route Prefix
-    |--------------------------------------------------------------------------
-    |
-    | The route prefix for serving HTTP based manipulated images through Glide.
+    | Default: 'img'
+    | Example URLs:
+    |   - /img/base64_path/base64_params.jpg
+    |   - /my-images/base64_path/base64_params.webp (if set to 'my-images')
     |
     */
 
-    'route' => 'img',
-
+    'base_url' => env('GLIDE_BASE_URL', 'img'),
 
     /*
     |--------------------------------------------------------------------------
-    | Image size limit
+    | Source Filesystem
     |--------------------------------------------------------------------------
     |
-    | Limit how large images can be generated. The following setting will set
-    | the maximum allowed total image size, in pixels.
+    | The filesystem path where your original images are stored. This directory
+    | will be used to read the source images for manipulation.
+    |
+    | Default: resource_path('assets') => /resources/assets/
+    |
+    | You can also use other Laravel storage disks:
+    | - storage_path('app/images')
+    | - public_path('images')
+    | - '/var/www/uploads'
+    |
+    */
+
+    'source' => env('GLIDE_SOURCE_PATH', resource_path('assets')),
+
+    /*
+    |--------------------------------------------------------------------------
+    | Watermarks Filesystem
+    |--------------------------------------------------------------------------
+    |
+    | The filesystem path where your watermark images are stored. These images
+    | can be applied to other images using the 'mark' parameter.
+    |
+    | Default: resource_path('assets/watermarks')
+    |
+    | Usage: <x-glide-img src="image.jpg" glide-mark="logo.png" />
+    |
+    */
+
+    'watermarks' => env('GLIDE_WATERMARKS_PATH', resource_path('assets/watermarks')),
+
+    /*
+    |--------------------------------------------------------------------------
+    | Cache Filesystem
+    |--------------------------------------------------------------------------
+    |
+    | The filesystem path where processed/manipulated images will be cached.
+    | This improves performance by avoiding re-processing the same image
+    | with identical parameters.
+    |
+    | Default: storage_path('cache/glide')
+    |
+    | Note: Ensure this directory is writable by your web server.
+    | You can clear the cache using: php artisan glide:clear-cache
+    |
+    */
+
+    'cache' => env('GLIDE_CACHE_PATH', storage_path('cache/glide')),
+
+    /*
+    |--------------------------------------------------------------------------
+    | Cache with File Extensions
+    |--------------------------------------------------------------------------
+    |
+    | Whether to include the file extension in the cached filename. When set to
+    | true, cached files will include extensions like .jpg, .png, etc.
+    | When false, cached files will have no extension.
+    |
+    | Default: false
+    |
+    | true:  cache/abc123.jpg, cache/def456.png
+    | false: cache/abc123, cache/def456
+    |
+    */
+
+    'cache_with_file_extensions' => env('GLIDE_CACHE_WITH_EXTENSIONS', false),
+
+    /*
+    |--------------------------------------------------------------------------
+    | Maximum Image Size
+    |--------------------------------------------------------------------------
+    |
+    | Limit how large images can be generated to prevent excessive memory usage
+    | and server load. This setting defines the maximum allowed total image
+    | size in pixels (width × height).
+    |
+    | Default: 2000 × 2000 = 4,000,000 pixels
+    |
+    | Examples:
+    | - 2000 × 2000 = 4MP (suitable for most web applications)
+    | - 4000 × 4000 = 16MP (for high-resolution applications)
+    | - 1000 × 1000 = 1MP (for performance-critical applications)
     |
     */
 
     'max_image_size' => env('GLIDE_MAX_IMAGE_SIZE', 2000 * 2000),
-
-
-    /*
-    |--------------------------------------------------------------------------
-    | Require Glide security token
-    |--------------------------------------------------------------------------
-    |
-    | With this option enabled, you are protecting your website from mass image
-    | resize attacks. We recommend using a 128 character (or larger) signing
-    | key to prevent trivial key attacks but may want to disable this while
-    | in development to tinker.
-    |
-    */
-
-    'secure'   => env('GLIDE_SECURE', true),
-    'sign_key' => env('GLIDE_SIGN_KEY',
-        'xa9uSX5l1HCR7F/2ywqLU66NZtp0q+dDR/x3c53saR935zBfUpFgv15kJF1rJGkk4VNO/yKpKCDknDdwXyPZABW7VLGvVc2+8oyl1QOCYwbVtjn/tPCiCI8fNNnXJQRVP6QnHi/CB4ey7Vaaf/tPkZrPntZCGVFiP3utmvXBam8='),
-
 
     /*
     |--------------------------------------------------------------------------
     | Image Manipulation Driver
     |--------------------------------------------------------------------------
     |
-    | The driver that will be used under the hood for image manipulation.
-    | Supported: "gd" or "imagick" (if installed on your server)
+    | The image processing driver to use for manipulations. Each driver has
+    | different capabilities and performance characteristics.
+    |
+    | Supported drivers:
+    | - 'gd': PHP's built-in GD extension (widely available)
+    | - 'imagick': ImageMagick extension (more features, better quality)
+    |
+    | Default: 'gd'
+    |
+    | Note: Ensure the chosen driver is installed on your server.
+    | Check with: php -m | grep -E '(gd|imagick)'
     |
     */
 
-    'driver' => env('IMAGE_MANIPULATION_DRIVER', 'gd'),
+    'driver' => env('GLIDE_IMAGE_MANIPULATION_DRIVER', 'gd'),
 
     /*
     |--------------------------------------------------------------------------
-    | Save Cached Images
+    | Default Image Manipulation Parameters
     |--------------------------------------------------------------------------
     |
-    | Enabling this will make Glide save publicly accessible images. It will
-    | increase performance at the cost of the dynamic nature of HTTP based
-    | image manipulation. You will need to invalidate images manually.
+    | These parameters will be applied to all images unless overridden by
+    | specific parameters in your Blade components or Facade calls.
+    |
+    | Common defaults:
+    | - 'fm' => 'webp'     : Convert all images to WebP format for better compression
+    | - 'q' => 85          : Set default quality to 85%
+    |
+    | Default: ['fm' => 'webp'] - converts all images to WebP format
     |
     */
 
-    'cache'             => env('SAVE_CACHED_IMAGES', true),
-    'cache_path_prefix' => '.cache',
-    'cache_path'        => storage_path('app/glide'), //default cache location
+    'defaults' => [
+        'fm' => env('GLIDE_DEFAULT_FORMAT', 'webp'),
+        'q'  => env('GLIDE_DEFAULT_QUALITY', 85),
+    ],
 
     /*
     |--------------------------------------------------------------------------
     | Image Manipulation Presets
     |--------------------------------------------------------------------------
     |
-    | Rather than specifying your manipulation params in your templates with
-    | the glide tag, you may define them here and reference their handles.
-    | They will also be automatically generated when you upload assets.
+    | Define common image manipulation configurations that can be referenced
+    | by name in your Blade components. This promotes consistency and makes
+    | it easier to maintain image sizes across your application.
+    |
+    | Usage in Blade:
+    | <x-glide-img src="image.jpg" glide-preset="thumbnail" />
+    | <x-glide-img src="image.jpg" glide-preset="hero" />
+    |
+    | Available parameters: any League/Glide parameter
+    | - w, h: width and height
+    | - fit: crop, contain, fill, stretch, max
+    | - q: quality (1-100)
+    | - fm: format (jpg, png, gif, webp, avif)
+    | - blur, bri, con, gam, sharp: image effects
+    | - filt: filters (greyscale, sepia)
     |
     */
 
     'presets' => [
-        'xs-webp'  => ['w' => 320, 'h' => 10000, 'q' => 85, 'fit' => 'contain', 'fm' => 'webp'],
-        'sm-webp'  => ['w' => 480, 'h' => 10000, 'q' => 85, 'fit' => 'contain', 'fm' => 'webp'],
-        'md-webp'  => ['w' => 768, 'h' => 10000, 'q' => 85, 'fit' => 'contain', 'fm' => 'webp'],
-        'lg-webp'  => ['w' => 1280, 'h' => 10000, 'q' => 85, 'fit' => 'contain', 'fm' => 'webp'],
-        'xl-webp'  => ['w' => 1440, 'h' => 10000, 'q' => 95, 'fit' => 'contain', 'fm' => 'webp'],
-        '2xl-webp' => ['w' => 1680, 'h' => 10000, 'q' => 95, 'fit' => 'contain', 'fm' => 'webp'],
-        'xs'       => ['w' => 320, 'h' => 10000, 'q' => 85, 'fit' => 'contain'],
-        'sm'       => ['w' => 480, 'h' => 10000, 'q' => 85, 'fit' => 'contain'],
-        'md'       => ['w' => 768, 'h' => 10000, 'q' => 85, 'fit' => 'contain'],
-        'lg'       => ['w' => 1280, 'h' => 10000, 'q' => 85, 'fit' => 'contain'],
-        'xl'       => ['w' => 1440, 'h' => 10000, 'q' => 95, 'fit' => 'contain'],
-        '2xl'      => ['w' => 1680, 'h' => 10000, 'q' => 95, 'fit' => 'contain'],
-    ]
+        // Responsive breakpoint sizes (based on common CSS frameworks)
+        'xs'  => ['w' => 320, 'q' => 85],  // Extra small devices
+        'sm'  => ['w' => 480, 'q' => 85],  // Small devices
+        'md'  => ['w' => 768, 'q' => 85],  // Medium devices
+        'lg'  => ['w' => 1280, 'q' => 85], // Large devices
+        'xl'  => ['w' => 1440, 'q' => 85], // Extra large devices
+        '2xl' => ['w' => 1920, 'q' => 85], // 2X large devices
+
+        // Common use case presets
+        'thumbnail' => [
+            'w'   => 150,
+            'h'   => 150,
+            'fit' => 'crop',
+            'q'   => 90,
+        ],
+
+        'avatar' => [
+            'w'   => 80,
+            'h'   => 80,
+            'fit' => 'crop',
+            'q'   => 95,
+        ],
+
+        'card' => [
+            'w'   => 400,
+            'h'   => 250,
+            'fit' => 'crop',
+            'q'   => 85,
+        ],
+
+        'hero' => [
+            'w'   => 1200,
+            'h'   => 600,
+            'fit' => 'crop',
+            'q'   => 90,
+        ],
+
+        'gallery' => [
+            'w'   => 800,
+            'h'   => 600,
+            'fit' => 'crop',
+            'q'   => 85,
+        ],
+
+        // Specialty presets
+        'low-quality' => [
+            'w'    => 400,
+            'q'    => 50,
+            'blur' => 1,
+        ],
+
+        'high-quality' => [
+            'q'     => 95,
+            'fm'    => 'webp',
+            'sharp' => 15,
+        ],
+    ],
+
+    /*
+    |--------------------------------------------------------------------------
+    | Responsive Background Image Presets
+    |--------------------------------------------------------------------------
+    |
+    | Define responsive background image configurations for the
+    | <x-glide-bg> component. Each preset contains breakpoint definitions
+    | with their corresponding image manipulation parameters.
+    |
+    | Usage: <x-glide-bg src="hero.jpg" preset="hero" />
+    |
+    | Breakpoints can use named breakpoints (xs, sm, md, lg, xl) or
+    | pixel values (320, 768, 1024, etc.)
+    |
+    */
+
+    'background_presets' => [
+        // Hero section backgrounds
+        'hero' => [
+            'xs' => ['w' => 768, 'h' => 400, 'fit' => 'crop', 'q' => 85],
+            'md' => ['w' => 1024, 'h' => 500, 'fit' => 'crop', 'q' => 85],
+            'lg' => ['w' => 1440, 'h' => 600, 'fit' => 'crop', 'q' => 90],
+            'xl' => ['w' => 1920, 'h' => 700, 'fit' => 'crop', 'q' => 90],
+        ],
+
+        // Full-width banner backgrounds
+        'banner' => [
+            'xs' => ['w' => 768, 'h' => 200, 'fit' => 'crop', 'q' => 85],
+            'sm' => ['w' => 1024, 'h' => 250, 'fit' => 'crop', 'q' => 85],
+            'lg' => ['w' => 1440, 'h' => 300, 'fit' => 'crop', 'q' => 90],
+            'xl' => ['w' => 1920, 'h' => 350, 'fit' => 'crop', 'q' => 90],
+        ],
+
+        // Card/section backgrounds
+        'section' => [
+            'xs' => ['w' => 480, 'h' => 300, 'fit' => 'crop', 'q' => 80],
+            'md' => ['w' => 768, 'h' => 400, 'fit' => 'crop', 'q' => 85],
+            'lg' => ['w' => 1200, 'h' => 500, 'fit' => 'crop', 'q' => 85],
+        ],
+
+        // Sidebar/aside backgrounds
+        'sidebar' => [
+            'xs' => ['w' => 320, 'h' => 200, 'fit' => 'crop', 'q' => 80],
+            'md' => ['w' => 400, 'h' => 250, 'fit' => 'crop', 'q' => 85],
+            'lg' => ['w' => 500, 'h' => 300, 'fit' => 'crop', 'q' => 85],
+        ],
+
+        // Portrait-oriented backgrounds
+        'portrait' => [
+            'xs' => ['w' => 400, 'h' => 600, 'fit' => 'crop', 'q' => 85],
+            'md' => ['w' => 600, 'h' => 900, 'fit' => 'crop', 'q' => 85],
+            'lg' => ['w' => 800, 'h' => 1200, 'fit' => 'crop', 'q' => 90],
+        ],
+
+        // Square/instagram-style backgrounds
+        'square' => [
+            'xs' => ['w' => 400, 'h' => 400, 'fit' => 'crop', 'q' => 85],
+            'md' => ['w' => 600, 'h' => 600, 'fit' => 'crop', 'q' => 85],
+            'lg' => ['w' => 800, 'h' => 800, 'fit' => 'crop', 'q' => 90],
+        ],
+
+        // Performance-optimized for above-the-fold content
+        'above-fold' => [
+            'xs' => ['w' => 768, 'h' => 400, 'fit' => 'crop', 'q' => 95],
+            'md' => ['w' => 1024, 'h' => 500, 'fit' => 'crop', 'q' => 95],
+            'lg' => ['w' => 1440, 'h' => 600, 'fit' => 'crop', 'q' => 95],
+        ],
+
+        // Low-quality placeholders for lazy loading
+        'placeholder' => [
+            'xs' => ['w' => 40, 'h' => 25, 'fit' => 'crop', 'q' => 10, 'blur' => 10],
+        ],
+    ],
+
+    /*
+    |--------------------------------------------------------------------------
+    | Security Settings
+    |--------------------------------------------------------------------------
+    |
+    | Configure security-related options for image processing.
+    |
+    | URL Signing: When enabled, all image URLs must be properly signed to
+    | prevent unauthorized manipulation. This prevents users from creating
+    | arbitrary image transformations that could overload your server.
+    |
+    | Signing Key: The key used to sign URLs. Defaults to your APP_KEY for
+    | security. You can set a custom key via GLIDE_SIGN_KEY environment variable.
+    |
+    */
+
+    'secure'   => env('GLIDE_SECURE', true),
+    'sign_key' => env('GLIDE_SIGN_KEY', env('APP_KEY')),
+
+    /*
+    |--------------------------------------------------------------------------
+    | Advanced Configuration
+    |--------------------------------------------------------------------------
+    |
+    | Additional configuration options for advanced use cases and performance
+    | optimization.
+    |
+    */
+
+    // Group cached images in folders based on their hash for better file organization
+    'group_cache_in_folders' => env('GLIDE_GROUP_CACHE', true),
+
+    // Add and Glide custom server configuration here
 
 ];
