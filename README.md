@@ -88,7 +88,7 @@ The package provides convenient Blade components for generating image tags:
 />
 
 {{-- Responsive image with multiple sizes using srcset --}}
-<x-glide-img-responsive 
+<x-glide-bg-responsive 
     src="hero-image.jpg"
     width="1200"
     loading="lazy"
@@ -161,7 +161,7 @@ Define common image sizes in your configuration and reference them:
 The Blade components automatically calculate appropriate srcset values:
 
 ```html
-<x-glide-img-responsive
+<x-glide-bg-responsive
     src="large-image.jpg"
     glide-w="800"
     glide-q="85"
@@ -277,75 +277,11 @@ php artisan glide:convert-tags
 
 ## API Reference
 
-### Facade Methods
-
-The `Glide` facade provides the following methods:
-
-#### `getUrl(string $path, array $params = []): string`
-
-Generate a signed URL for an image with the given parameters.
-
-```php
-$url = Glide::getUrl('image.jpg', ['w' => 400, 'q' => 85]);
-```
-
-#### `getResponsiveBackgroundUrls(string $path, array $breakpoints = [], array $baseParams = []): array`
-
-Generate multiple URLs for responsive backgrounds.
-
-```php
-$urls = Glide::getResponsiveBackgroundUrls('hero.jpg', [
-    'xs' => ['w' => 768, 'h' => 400],
-    'lg' => ['w' => 1440, 'h' => 600]
-]);
-```
-
-#### `generateBackgroundCSS(string $path, array $breakpoints, string $selector, array $options = []): string`
-
-Generate CSS for responsive background images.
-
-```php
-$css = Glide::generateBackgroundCSS('hero.jpg', $breakpoints, '.hero-section');
-```
-
-#### `getBackgroundPreset(string $presetName): array`
-
-Get a background preset configuration.
-
-```php
-$preset = Glide::getBackgroundPreset('hero');
-```
-
-#### `getCachePath(string $path, array $params = []): string`
-
-Get the cache path for a processed image.
-
-```php
-$cachePath = Glide::getCachePath('image.jpg', ['w' => 400]);
-```
-
-#### `decodePath(string $encoded): string`
-
-Decode a base64url-encoded file path.
-
-#### `decodeParams(string $encoded): array`
-
-Decode base64url-encoded parameters.
-
 ### Blade Component Attributes
 
 #### Image Components
 
-The `<x-glide-img>` and `<x-glide-img-responsive>` components accept all standard HTML img attributes plus Glide parameters prefixed with `glide-`:
-
-##### Standard HTML Attributes
-- `src` - Image source path (required)
-- `alt` - Alternative text
-- `class` - CSS classes
-- `width` - HTML width attribute
-- `height` - HTML height attribute
-- `loading` - Loading behavior (`lazy`, `eager`)
-- `sizes` - Sizes attribute for responsive images
+The `<x-glide-img>` and `<x-glide-bg-responsive>` components accept all standard HTML img attributes plus Glide parameters prefixed with `glide-`:
 
 #### Background Component
 

@@ -5,9 +5,9 @@ declare(strict_types=1);
 namespace Daikazu\LaravelGlider;
 
 use Daikazu\LaravelGlider\Commands\ClearGlideCacheCommand;
+use Daikazu\LaravelGlider\Components\BgResponsive;
 use Daikazu\LaravelGlider\Components\Img;
 use Daikazu\LaravelGlider\Components\ImgResponsive;
-use Daikazu\LaravelGlider\Components\ResponsiveBackground;
 use Daikazu\LaravelGlider\Facades\Glide;
 use Daikazu\LaravelGlider\Factories\ResponseFactory;
 use Illuminate\Contracts\Foundation\Application;
@@ -34,7 +34,7 @@ class LaravelGliderServiceProvider extends PackageServiceProvider
             ->name('laravel-glider')
             ->hasConfigFile()
             ->hasViews('laravel-glider')
-            ->hasViewComponents('glide', Img::class, ImgResponsive::class, ResponsiveBackground::class)
+            ->hasViewComponents('glide', Img::class, ImgResponsive::class, BgResponsive::class)
             ->hasRoute('web')
             ->hasCommand(ClearGlideCacheCommand::class);
     }
@@ -44,7 +44,7 @@ class LaravelGliderServiceProvider extends PackageServiceProvider
 
         // inject the glider link in the filesystem links config array while preserving the existing ones
         config(['filesystems.links' => array_merge(config('filesystems.links'), [public_path(config('glider.base_url')) => storage_path('app/public')])]);
-
+        //
         $this->app->singleton(Glide::class, GlideService::class);
 
         $this->app->instance(SignatureInterface::class, SignatureFactory::create((string) config('glider.sign_key', '')));

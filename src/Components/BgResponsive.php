@@ -10,7 +10,7 @@ use Illuminate\Support\Str;
 use Illuminate\View\Component;
 use InvalidArgumentException;
 
-class ResponsiveBackground extends Component
+class BgResponsive extends Component
 {
     protected string $view = 'laravel-glider::components.responsive-background';
 
