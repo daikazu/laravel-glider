@@ -42,9 +42,8 @@ class LaravelGliderServiceProvider extends PackageServiceProvider
     public function packageBooted(): void
     {
 
-        // inject the glider link in the filesystem links config array while preserving the existing ones
-        config(['filesystems.links' => array_merge(config('filesystems.links'), [public_path(config('glider.base_url')) => storage_path('app/public')])]);
-        //
+        config(['filesystems.links' => array_merge(config('filesystems.links'), [public_path(config('glider.base_url')) => config('glider.cache')])]);
+
         $this->app->singleton(Glide::class, GlideService::class);
 
         $this->app->instance(SignatureInterface::class, SignatureFactory::create((string) config('glider.sign_key', '')));
