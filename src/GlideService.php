@@ -167,7 +167,7 @@ final class GlideService
     private function getRouteParams(string $path, array $parameters = []): array
     {
         $pathForExt = (string) parse_url($path, PHP_URL_PATH);
-        $ext = strtolower(pathinfo($pathForExt, PATHINFO_EXTENSION) ?? '');
+        $ext = strtolower(! in_array(pathinfo($pathForExt, PATHINFO_EXTENSION), ['', '0'], true) ? pathinfo($pathForExt, PATHINFO_EXTENSION) : '');
 
         // Merge with server defaults/presets so fm from presets/defaults is considered
         $resolvedParams = $parameters;

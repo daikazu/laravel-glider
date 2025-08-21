@@ -19,7 +19,12 @@ class ImgResponsive extends BaseComponent
         public string $src,
         ?string $srcsetWidths = null,
     ) {
-        $this->srcsetWidths = $srcsetWidths !== null && $srcsetWidths !== '' && $srcsetWidths !== '0' ? array_map('intval', explode(',', $srcsetWidths)) : null;
+        if ($srcsetWidths !== null && $srcsetWidths !== '' && $srcsetWidths !== '0') {
+            $parsed = array_values(array_filter(array_map('intval', explode(',', $srcsetWidths)), fn (int $w): bool => $w > 0));
+            $this->srcsetWidths = count($parsed) > 0 ? $parsed : null;
+        } else {
+            $this->srcsetWidths = null;
+        }
     }
 
     public function srcset(): ?string
@@ -87,7 +92,7 @@ class ImgResponsive extends BaseComponent
      */
     protected function getSrcsetWidths(): ?array
     {
-        if ($this->srcsetWidths !== null && $this->srcsetWidths !== []) {
+        if ($this->srcsetWidths !== null) {
             $normalized = $this->normalizeWidths($this->srcsetWidths);
             if ($normalized !== null) {
                 return $normalized;
@@ -106,7 +111,7 @@ class ImgResponsive extends BaseComponent
         // Create a deterministic cache key that changes when inputs change.
         // - If custom widths are provided, the key is based on those.
         // - Otherwise, the key is based on the source image mtime to auto-bust on updates.
-        if ($this->srcsetWidths !== null && $this->srcsetWidths !== []) {
+        if ($this->srcsetWidths !== null) {
             $key = 'glide:' . sha1($this->src) . ':srcset_widths:custom:' . md5(implode(',', $this->srcsetWidths));
         } else {
             $imagePath = join_paths(config('glider.source'), $this->src);

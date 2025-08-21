@@ -6,11 +6,11 @@
     'data-glide-bg' => true,
     'data-glide-src' => $src
 ]) }}
-@if($getFallbackUrl())
+@if ($getFallbackUrl())
     style="background-image: url('{{ $getFallbackUrl() }}'); background-position: {{ $position }}; background-size: {{ $size }}; background-repeat: {{ $repeat }}; background-attachment: {{ $attachment }};"
 @endif
-@if($lazy)
-    @foreach($getLazyAttributes() as $attr => $value)
+@if ($lazy)
+    @foreach ($getLazyAttributes() as $attr => $value)
         {{ $attr }}="{{ $value }}"
     @endforeach
 @endif

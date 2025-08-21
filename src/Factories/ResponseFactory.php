@@ -26,7 +26,7 @@ class ResponseFactory implements ResponseFactoryInterface
     {
         $stream = $filesystem->readStream($filePath);
 
-        $mimeType = $filesystem->mimeType($filePath) ?? 'application/octet-stream';
+        $mimeType = $filesystem->mimeType($filePath);
         $contentLength = (string) $filesystem->fileSize($filePath);
 
         // Prepare common cache headers

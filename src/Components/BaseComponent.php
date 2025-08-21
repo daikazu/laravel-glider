@@ -57,6 +57,8 @@ class BaseComponent extends Component
 
     /**
      * Retrieve and cache intrinsic dimensions using getimagesize.
+     *
+     * @return array{width:int, height:int}|null
      */
     protected function dimensions(): ?array
     {
@@ -75,8 +77,8 @@ class BaseComponent extends Component
         }
 
         return $this->dimensions = [
-            'width'  => $info[0] ?? 0,
-            'height' => $info[1] ?? 0,
+            'width'  => $info[0],
+            'height' => $info[1],
         ];
     }
 
@@ -133,14 +135,10 @@ class BaseComponent extends Component
         } elseif ($h) {
             $targetH = $h;
             $targetW = (int) round($W0 * ($h / $H0));
-        } else {
-            // No size constraints: keep original
-            $targetW = $W0;
-            $targetH = $H0;
         }
 
         // Device pixel ratio support (if provided)
-        $dpr = $attrs->has('dpr') ? (float) $attrs->get('dpr') : 1.0;
+        $dpr = $attrs->has((array) 'dpr') ? (float) $attrs->get('dpr') : 1.0;
         if ($dpr > 0 && $dpr !== 1.0) {
             $targetW = (int) round($targetW * $dpr);
             $targetH = (int) round($targetH * $dpr);

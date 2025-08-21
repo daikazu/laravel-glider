@@ -123,7 +123,7 @@ class ConvertImageTagsToGliderCommand extends Command
         // Pattern to match <img> tags with src attribute, handling nested quotes in Blade syntax
         $pattern = '/<img\s+([^>]*?)src=(["\'])((?:(?!\2).)*)\2([^>]*?)>/i';
 
-        return preg_replace_callback($pattern, function ($matches) use ($useResponsive, $imagePath): string {
+        return preg_replace_callback($pattern, function (array $matches) use ($useResponsive, $imagePath): string {
             $beforeSrc = trim((string) $matches[1]);
             $srcValue = $matches[3]; // The actual src value is now in group 3
             $afterSrc = trim((string) $matches[4]); // After src attributes are in group 4
