@@ -2,6 +2,20 @@
 
 All notable changes to `laravel-glider` will be documented in this file.
 
+## v3.0.1 - 2025-08-21
+
+### What's Changed
+
+* fixed storage:link filesystem location
+* Bump actions/checkout from 4 to 5 by @dependabot[bot] in https://github.com/daikazu/laravel-glider/pull/6
+* Bump stefanzweifel/git-auto-commit-action from 5 to 6 by @dependabot[bot] in https://github.com/daikazu/laravel-glider/pull/5
+
+### New Contributors
+
+* @dependabot[bot] made their first contribution in https://github.com/daikazu/laravel-glider/pull/6
+
+**Full Changelog**: https://github.com/daikazu/laravel-glider/compare/v3.0.0...v3.0.1
+
 ## v3.0.0 - Major Release - 2025-08-20
 
 🚀 Laravel Glider v3.0.0 - Major Release
@@ -27,7 +41,6 @@ The marquee feature of v3! Introducing the powerful <x-glide-bg-responsive> comp
       </div>
   </x-glide-bg-responsive>
 Features:
-
 - Automatic CSS generation with media queries
 - Preset system for consistent backgrounds
 - Custom breakpoint support
