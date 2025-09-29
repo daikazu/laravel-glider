@@ -2,6 +2,10 @@
 
 All notable changes to `laravel-glider` will be documented in this file.
 
+## v3.0.2 - 2025-09-29
+
+**Full Changelog**: https://github.com/daikazu/laravel-glider/compare/v3.0.1...v3.0.2
+
 ## v3.0.1 - 2025-08-21
 
 ### What's Changed
@@ -46,7 +50,6 @@ Features:
 - Custom breakpoint support
 - Lazy loading capabilities
 - Fallback image support
-
 🎨 Enhanced Blade Components
 
 - New: <x-glide-bg-responsive> for responsive backgrounds
