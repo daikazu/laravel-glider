@@ -33,7 +33,7 @@ class LaravelGliderServiceProvider extends PackageServiceProvider
          */
         $package
             ->name('laravel-glider')
-            ->hasConfigFile()
+            ->hasConfigFile('laravel-glider')
             ->hasViews('laravel-glider')
             ->hasViewComponents('glide', Img::class, ImgResponsive::class, BgResponsive::class)
             ->hasRoute('web')
