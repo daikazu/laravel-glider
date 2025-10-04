@@ -46,10 +46,20 @@ final class GlideService
         $adapter = new LocalFilesystemAdapter(config('laravel-glider.source'));
         if (Str::isUrl($path)) {
             // Extract base URL for HTTP filesystem
-            $baseUrl = parse_url($path, PHP_URL_SCHEME) . '://' . parse_url($path, PHP_URL_HOST);
-            if ($port = parse_url($path, PHP_URL_PORT)) {
-                $baseUrl .= ':' . $port;
+            $parsedUrl = parse_url($path);
+            if (! $parsedUrl || ! isset($parsedUrl['scheme'], $parsedUrl['host'])) {
+                throw new InvalidArgumentException("Invalid URL provided: {$path}");
             }
+
+            $baseUrl = $parsedUrl['scheme'] . '://' . $parsedUrl['host'];
+            if (isset($parsedUrl['port'])) {
+                $baseUrl .= ':' . $parsedUrl['port'];
+            }
+            // Include base path if present (e.g., https://cdn.example.com/images)
+            if (isset($parsedUrl['path']) && $parsedUrl['path'] !== '' && $parsedUrl['path'] !== '/') {
+                $baseUrl .= rtrim($parsedUrl['path'], '/');
+            }
+
             $adapter = HttpAdapterPsr::fromUrl($baseUrl);
         }
 
