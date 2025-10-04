@@ -93,8 +93,10 @@ final class GlideService
         // Now we determine the route parameters including the signature (which depends on the other parameters)
         $routeParams = $this->getRouteParams($path, $params);
 
-        $routeParams['s'] = app(SignatureInterface::class)
-            ->generateSignature(route('glide', $routeParams, false), []);
+        $signedParams = app(SignatureInterface::class)
+            ->addSignature(route('glide', $routeParams, false), []);
+
+        $routeParams['s'] = $signedParams['s'];
 
         return route('glide', $routeParams);
     }

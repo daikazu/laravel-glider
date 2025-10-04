@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 use Daikazu\LaravelGlider\Components\ImgResponsive;
 use Daikazu\LaravelGlider\Facades\Glide;
+use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\Cache;
 use Illuminate\View\ComponentAttributeBag;
 use Mockery as m;
@@ -67,7 +68,7 @@ function createTestImgResponsive(string $src, ?string $srcsetWidths = null, arra
             return $method->invokeArgs($this, [$widths]);
         }
 
-        public function glideAttributes(): \Illuminate\Support\Collection
+        public function glideAttributes(): Collection
         {
             return parent::glideAttributes();
         }
@@ -395,7 +396,7 @@ it('handles zero or false filesize gracefully', function () {
     // Create a component that tests the filesize logic by mocking the protected method
     $component = new class('test-empty.jpg') extends ImgResponsive
     {
-        public function setAttributes(\Illuminate\View\ComponentAttributeBag $attributes): void
+        public function setAttributes(ComponentAttributeBag $attributes): void
         {
             $this->attributes = $attributes;
         }
@@ -413,7 +414,7 @@ it('handles zero or false filesize gracefully', function () {
         }
     };
 
-    $component->setAttributes(new \Illuminate\View\ComponentAttributeBag([]));
+    $component->setAttributes(new ComponentAttributeBag([]));
     $widths = $component->testGetSrcsetWidthsFromImg();
 
     expect($widths)->toBeNull();
