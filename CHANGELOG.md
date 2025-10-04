@@ -2,6 +2,10 @@
 
 All notable changes to `laravel-glider` will be documented in this file.
 
+## v3.0.4 - 2025-10-04
+
+**Full Changelog**: https://github.com/daikazu/laravel-glider/compare/v3.0.3...v3.0.4
+
 ## v3.0.3 - 2025-10-04
 
 **Full Changelog**: https://github.com/daikazu/laravel-glider/compare/v3.0.2...v3.0.3
@@ -58,7 +62,6 @@ Features:
 - New: <x-glide-bg-responsive> for responsive backgrounds
 - Improved: Better attribute handling and performance
 - Enhanced: Automatic srcset generation
-
 ⚙️ Advanced Configuration System
 
 - Background Presets: Pre-configured responsive breakpoints for common use cases
