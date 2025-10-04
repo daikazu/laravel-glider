@@ -111,12 +111,18 @@ class ImgResponsive extends BaseComponent
         // Create a deterministic cache key that changes when inputs change.
         // - If custom widths are provided, the key is based on those.
         // - Otherwise, the key is based on the source image mtime to auto-bust on updates.
+        // - Include config hash to bust cache when config changes
+        $configHash = md5(json_encode([
+            config('laravel-glider.defaults'),
+            config('laravel-glider.presets'),
+        ]) ?: '');
+
         if ($this->srcsetWidths !== null) {
-            $key = 'glide:' . sha1($this->src) . ':srcset_widths:custom:' . md5(implode(',', $this->srcsetWidths));
+            $key = 'glide:' . sha1($this->src) . ':srcset_widths:custom:' . md5(implode(',', $this->srcsetWidths)) . ':' . $configHash;
         } else {
             $imagePath = join_paths(config('laravel-glider.source'), $this->src);
             $mtime = is_file($imagePath) ? (filemtime($imagePath) ?: 0) : 0;
-            $key = 'glide:' . sha1($this->src) . ':srcset_widths:img:' . $mtime;
+            $key = 'glide:' . sha1($this->src) . ':srcset_widths:img:' . $mtime . ':' . $configHash;
         }
 
         // Return a cached value if present.
