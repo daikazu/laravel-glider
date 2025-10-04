@@ -41,7 +41,23 @@ Publish the configuration file:
 php artisan vendor:publish --tag="laravel-glider-config"
 ```
 
-This will create a `config/glider.php` file. See file for more details. 
+This will create a `config/laravel-glider.php` file. See file for more details.
+
+### Storage Link (Optional)
+
+To serve cached images directly from your public directory, create a symbolic link:
+
+```bash
+# Add to config/filesystems.php
+'links' => [
+    public_path('img') => storage_path('cache/glide'),
+],
+
+# Then create the symlink
+php artisan storage:link
+```
+
+Adjust the paths based on your `GLIDE_BASE_URL` and `GLIDE_CACHE_PATH` configuration.
 
 ### Views (Optional)
 

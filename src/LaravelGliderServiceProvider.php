@@ -42,9 +42,6 @@ class LaravelGliderServiceProvider extends PackageServiceProvider
 
     public function packageBooted(): void
     {
-
-        config(['filesystems.links' => array_merge(config('filesystems.links'), [public_path(config('laravel-glider.base_url')) => config('laravel-glider.cache')])]);
-
         $this->app->singleton(Glide::class, GlideService::class);
 
         $this->app->instance(SignatureInterface::class, SignatureFactory::create((string) config('laravel-glider.sign_key', '')));
@@ -55,7 +52,7 @@ class LaravelGliderServiceProvider extends PackageServiceProvider
         ));
 
         $this->app->bind(Server::class, fn (Application $app): Server => ServerFactory::create(
-            array_merge(config('glider'), ['response' => $app->make(ResponseFactory::class)])
+            array_merge(config('laravel-glider'), ['response' => $app->make(ResponseFactory::class)])
         ));
 
     }
