@@ -8,7 +8,7 @@ use Illuminate\View\ComponentAttributeBag;
 use Mockery as m;
 
 beforeEach(function () {
-    config(['glider.source' => __DIR__ . '/../fixtures']);
+    config(['laravel-glider.source' => __DIR__ . '/../fixtures']);
 
     // Create a basic test view
     $viewPath = __DIR__ . '/../views';
