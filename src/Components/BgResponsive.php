@@ -160,9 +160,17 @@ class BgResponsive extends Component
      */
     protected function buildBreakpointsFromArray(array $breakpoints): Collection
     {
+        if (empty($breakpoints)) {
+            throw new InvalidArgumentException('Breakpoints array cannot be empty');
+        }
+
         $collection = collect();
 
         foreach ($breakpoints as $key => $params) {
+            if (! is_array($params)) {
+                throw new InvalidArgumentException("Breakpoint '{$key}' must have an array of parameters");
+            }
+
             // Handle named breakpoints (xs, sm, md, lg, xl) vs numeric breakpoints
             $minWidth = $this->getMinWidthFromBreakpoint($key);
             $glideParams = $this->mergeGlideAttributes($params);
