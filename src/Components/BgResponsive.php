@@ -55,13 +55,14 @@ class BgResponsive extends Component
         // Generate media queries for larger breakpoints
         $breakpoints->slice(1)->each(function (array $breakpoint) use (&$cssRules, $componentId): void {
             $mediaQuery = "@media (min-width: {$breakpoint['min_width']}px)";
+            $rule = $this->generateCSSRule(
+                ".glide-bg-{$componentId}",
+                $breakpoint['url'],
+                $breakpoint['params'],
+                true  // Include selector in media queries
+            );
             $cssRules[] = $mediaQuery . ' {' . PHP_EOL .
-                '    ' . $this->generateCSSRule(
-                    ".glide-bg-{$componentId}",
-                    $breakpoint['url'],
-                    $breakpoint['params'],
-                    false
-                ) . PHP_EOL .
+                '    ' . $rule . PHP_EOL .
                 '}';
         });
 
@@ -117,7 +118,9 @@ class BgResponsive extends Component
         return [
             'data-bg-lazy'   => 'true',
             'data-bg-src'    => $breakpoints->first()['url'] ?? '',
-            'data-bg-srcset' => $breakpoints->map(fn (array $bp): string => "{$bp['url']} {$bp['min_width']}w")->implode(', '),
+            // For background images with media queries, we store the breakpoint info differently
+            // The lazy loader should use min_width as the media query breakpoint, not as the image width
+            'data-bg-srcset' => $breakpoints->map(fn (array $bp): string => "{$bp['url']} {$bp['min_width']}px")->implode(', '),
         ];
     }
 
