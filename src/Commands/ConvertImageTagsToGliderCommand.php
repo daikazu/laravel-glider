@@ -14,7 +14,7 @@ class ConvertImageTagsToGliderCommand extends Command
      *
      * @var string
      */
-    protected $signature = 'glider:convert-images
+    protected $signature = 'glider:convert-img-tags
                             {--dry-run : Show what would be changed without making any changes}
                             {--backup : Create backup files before making changes}
                             {--path=resources/views : Path to search for blade files}
@@ -26,7 +26,7 @@ class ConvertImageTagsToGliderCommand extends Command
      *
      * @var string
      */
-    protected $description = 'Convert HTML img tags to Laravel Glider components in Blade files';
+    protected $description = 'Convert HTML img tags to Laravel Glider components (⚠️ USE AT YOUR OWN RISK - Run with --dry-run first)';
 
     private array $changedFiles = [];
     private array $totalChanges = [];
@@ -45,6 +45,27 @@ class ConvertImageTagsToGliderCommand extends Command
         if (! is_dir($searchPath)) {
             $this->error("Directory {$searchPath} does not exist.");
             return 1;
+        }
+
+        // Display warning and confirmation unless in dry-run mode
+        if (! $isDryRun) {
+            $this->warn('⚠️  USE AT YOUR OWN RISK ⚠️');
+            $this->newLine();
+            $this->line('This command will modify your Blade files by converting <img> tags to Laravel Glider components.');
+            $this->newLine();
+            $this->info('💡 Recommended safety steps before proceeding:');
+            $this->line('   1. Create a git commit of your current work');
+            $this->line('   2. OR create a new branch to review changes:');
+            $this->line('      <fg=cyan>git checkout -b glider-conversion</>');
+            $this->line('   3. Run this command first with --dry-run to preview changes:');
+            $this->line('      <fg=cyan>php artisan glider:convert-img-tags --dry-run</>');
+            $this->line('   4. Use --backup to create timestamped backups of modified files');
+            $this->newLine();
+
+            if (! $this->confirm('Do you want to continue?', false)) {
+                $this->info('Operation cancelled. No files were modified.');
+                return 0;
+            }
         }
 
         $this->info("Searching for Blade files in: {$searchPath}");
@@ -235,6 +256,37 @@ class ConvertImageTagsToGliderCommand extends Command
                 $remaining = count($this->totalChanges) - 3;
                 $this->line("... and {$remaining} more changes.");
             }
+
+            $this->newLine();
+            $this->info('✅ Conversion complete!');
+            $this->newLine();
+            $this->info('📝 Next steps:');
+            $this->line('   1. Review the changes in your files');
+            $this->line('   2. Test your application to ensure images load correctly');
+            $this->line('   3. If using git, review changes with: <fg=cyan>git diff</>');
+            $this->line('   4. Commit the changes when satisfied: <fg=cyan>git add . && git commit -m "Convert img tags to Glider components"</>');
+        } elseif ($isDryRun && $this->totalChanges !== []) {
+            $this->newLine();
+            $this->info('Examples of changes that would be made:');
+
+            // Show first 3 examples
+            $examples = array_slice($this->totalChanges, 0, 3);
+            foreach ($examples as $change) {
+                $this->line('<fg=red>From:</fg=red> ' . $change['from']);
+                $this->line('<fg=green>To:</fg=green>   ' . $change['to']);
+                $this->newLine();
+            }
+
+            if (count($this->totalChanges) > 3) {
+                $remaining = count($this->totalChanges) - 3;
+                $this->line("... and {$remaining} more changes.");
+            }
+
+            $this->newLine();
+            $this->info('💡 To apply these changes, run the command without --dry-run');
+            $this->line('   <fg=cyan>php artisan glider:convert-img-tags</>');
+            $this->line('   OR with --backup to create backups:');
+            $this->line('   <fg=cyan>php artisan glider:convert-img-tags --backup</>');
         }
     }
 }
