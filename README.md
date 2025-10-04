@@ -270,12 +270,12 @@ Clear all cached processed images:
 php artisan glide:clear-cache
 ```
 
-### Convert Image Tags
+### Convert Image Tags (⚠️ WIP - USE AT YOUR OWN RISK - Run with --dry-run first)
 
 Convert existing HTML img tags to use Glide components:
 
 ```bash
-php artisan glide:convert-tags
+php artisan glider:convert-img-tags
 ```
 
 ## API Reference
