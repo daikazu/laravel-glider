@@ -138,7 +138,7 @@ class BaseComponent extends Component
         }
 
         // Device pixel ratio support (if provided)
-        $dpr = $attrs->has((array) 'dpr') ? (float) $attrs->get('dpr') : 1.0;
+        $dpr = $attrs->has('dpr') ? (float) $attrs->get('dpr') : 1.0;
         if ($dpr > 0 && $dpr !== 1.0) {
             $targetW = (int) round($targetW * $dpr);
             $targetH = (int) round($targetH * $dpr);
