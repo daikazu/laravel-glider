@@ -373,7 +373,7 @@ return [
         'md'  => ['w' => 768],
         'lg'  => ['w' => 1280],
         'xl'  => ['w' => 1440],
-        '2xl' => ['w' => 1000],
+        '2xl' => ['w' => 1920],
     ],
     
     // Responsive background image presets
