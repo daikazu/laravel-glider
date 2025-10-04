@@ -90,13 +90,16 @@ final class GlideService
             }
         }
 
-        // Now we determine the route parameters including the signature (which depends on the other parameters)
+        // Now we determine the route parameters
         $routeParams = $this->getRouteParams($path, $params);
 
-        $signedParams = app(SignatureInterface::class)
-            ->addSignature(route('glide', $routeParams, false), []);
+        // Only add signature if secure mode is enabled
+        if (config('laravel-glider.secure', true)) {
+            $signedParams = app(SignatureInterface::class)
+                ->addSignature(route('glide', $routeParams, false), []);
 
-        $routeParams['s'] = $signedParams['s'];
+            $routeParams['s'] = $signedParams['s'];
+        }
 
         return route('glide', $routeParams);
     }

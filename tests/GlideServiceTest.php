@@ -255,8 +255,10 @@ test('it encodes and decodes params symmetrically', function () {
     $encoded = $encodeMethod->invoke($service, $originalParams);
     $decoded = $service->decodeParams($encoded);
 
+    // encodeParams merges with server defaults, so we need to expect those defaults
     // Params are converted to strings during encoding
     $expectedParams = array_map('strval', $originalParams);
+    $expectedParams['fm'] = 'webp'; // Default from config
     ksort($expectedParams);
 
     expect($decoded)->toBe($expectedParams);
@@ -277,4 +279,35 @@ test('it removes signature and p params when encoding', function () {
     expect($decoded)->not->toHaveKey('s')
         ->and($decoded)->not->toHaveKey('p')
         ->and($decoded)->toHaveKey('w');
+});
+
+test('it does not add signature when secure is false', function () {
+    config(['laravel-glider.secure' => false]);
+
+    $service = new GlideService;
+    $url = $service->getUrl('test.jpg', ['w' => 400]);
+
+    expect($url)->not->toContain('?s=')
+        ->and($url)->not->toContain('&s=');
+});
+
+test('it adds signature when secure is true', function () {
+    config(['laravel-glider.secure' => true]);
+
+    $service = new GlideService;
+    $url = $service->getUrl('test.jpg', ['w' => 400]);
+
+    expect($url)->toContain('?s=');
+});
+
+test('it removes signature from URL when manually provided in params', function () {
+    config(['laravel-glider.secure' => true]);
+
+    $service = new GlideService;
+    // Even if 's' is provided in params, it should be removed and regenerated
+    $url = $service->getUrl('test.jpg', ['w' => 400, 's' => 'manually-added']);
+
+    // Should contain a signature, but not the manually added one
+    expect($url)->toContain('?s=')
+        ->and($url)->not->toContain('manually-added');
 });

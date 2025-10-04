@@ -42,21 +42,9 @@ php artisan vendor:publish --tag="laravel-glider-config"
 
 This will create a `config/laravel-glider.php` file. See file for more details.
 
-### Storage Link (Optional)
-
-To serve cached images directly from your public directory, create a symbolic link:
-
-```bash
-# Add to config/filesystems.php
-'links' => [
-    public_path('img') => storage_path('cache/glide'),
-],
-
-# Then create the symlink
-php artisan storage:link
-```
-
 Adjust the paths based on your `GLIDE_BASE_URL` and `GLIDE_CACHE_PATH` configuration.
+
+**Note:** The cache directory is automatically created when the package boots, and a `.gitignore` file is added to prevent committing cached images to version control.
 
 ### Views (Optional)
 
@@ -343,9 +331,9 @@ All configuration options available in `config/glider.php`:
 return [
     // Source filesystem path
     'source' => resource_path('assets'),
-    
-    // Cache filesystem path  
-    'cache' => storage_path('cache/glide'),
+
+    // Cache filesystem path
+    'cache' => storage_path('app/glider-cache'),
     
     // Watermarks filesystem path
     'watermarks' => resource_path('assets/watermarks'),

@@ -70,14 +70,15 @@ return [
     | This improves performance by avoiding re-processing the same image
     | with identical parameters.
     |
-    | Default: storage_path('cache/glide')
+    | Default: storage_path('app/glider-cache')
     |
-    | Note: Ensure this directory is writable by your web server.
+    | Note: This directory will be created automatically if it doesn't exist,
+    | and a .gitignore file will be added to prevent committing cached images.
     | You can clear the cache using: php artisan glide:clear-cache
     |
     */
 
-    'cache' => env('GLIDE_CACHE_PATH', storage_path('cache/glide')),
+    'cache' => env('GLIDE_CACHE_PATH', storage_path('app/glider-cache')),
 
     /*
     |--------------------------------------------------------------------------
@@ -331,7 +332,7 @@ return [
     |
     */
 
-    'secure'   => env('GLIDE_SECURE', true),
+    'secure'   => env('GLIDE_SECURE', false),
     'sign_key' => env('GLIDE_SIGN_KEY', env('APP_KEY')),
 
     /*

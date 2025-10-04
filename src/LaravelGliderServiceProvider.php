@@ -55,5 +55,31 @@ class LaravelGliderServiceProvider extends PackageServiceProvider
             array_merge(config('laravel-glider'), ['response' => $app->make(ResponseFactory::class)])
         ));
 
+        $this->ensureCacheDirectoryExists();
+    }
+
+    /**
+     * Ensure the cache directory exists and has a .gitignore file
+     */
+    protected function ensureCacheDirectoryExists(): void
+    {
+        $cachePath = (string) config('laravel-glider.cache');
+
+        if ($cachePath === '') {
+            return;
+        }
+
+        $filesystem = app('files');
+
+        // Create the cache directory if it doesn't exist
+        if (! $filesystem->isDirectory($cachePath)) {
+            $filesystem->makeDirectory($cachePath, 0755, true);
+        }
+
+        // Add .gitignore to prevent committing cached images
+        $gitignorePath = $cachePath . '/.gitignore';
+        if (! $filesystem->exists($gitignorePath)) {
+            $filesystem->put($gitignorePath, "*\n!.gitignore\n");
+        }
     }
 }
