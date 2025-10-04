@@ -56,6 +56,69 @@ class BaseComponent extends Component
     }
 
     /**
+     * Get the object-position CSS value from focal-point attribute
+     *
+     * Accepts formats:
+     * - "50,50" or "50, 50" - x,y percentages (0-100)
+     * - "center" - shorthand for 50% 50%
+     * - "top" - shorthand for 50% 0%
+     * - "bottom" - shorthand for 50% 100%
+     * - "left" - shorthand for 0% 50%
+     * - "right" - shorthand for 100% 50%
+     * - "top-left" - shorthand for 0% 0%
+     * - "top-right" - shorthand for 100% 0%
+     * - "bottom-left" - shorthand for 0% 100%
+     * - "bottom-right" - shorthand for 100% 100%
+     */
+    public function objectPosition(): ?string
+    {
+        if (! $this->attributes->has('focal-point')) {
+            return null;
+        }
+
+        $focalPoint = $this->attributes->get('focal-point');
+
+        if (! is_string($focalPoint) || $focalPoint === '' || $focalPoint === '0') {
+            return null;
+        }
+
+        $focalPoint = strtolower(trim($focalPoint));
+
+        // Named positions
+        $namedPositions = [
+            'center'       => '50% 50%',
+            'top'          => '50% 0%',
+            'bottom'       => '50% 100%',
+            'left'         => '0% 50%',
+            'right'        => '100% 50%',
+            'top-left'     => '0% 0%',
+            'top-right'    => '100% 0%',
+            'bottom-left'  => '0% 100%',
+            'bottom-right' => '100% 100%',
+        ];
+
+        if (isset($namedPositions[$focalPoint])) {
+            return $namedPositions[$focalPoint];
+        }
+
+        // Parse x,y coordinates
+        if (str_contains($focalPoint, ',')) {
+            $parts = array_map('trim', explode(',', $focalPoint));
+            if (count($parts) === 2) {
+                $x = (int) $parts[0];
+                $y = (int) $parts[1];
+
+                // Validate range 0-100
+                if ($x >= 0 && $x <= 100 && $y >= 0 && $y <= 100) {
+                    return "{$x}% {$y}%";
+                }
+            }
+        }
+
+        return null;
+    }
+
+    /**
      * Retrieve and cache intrinsic dimensions using getimagesize.
      *
      * @return array{width:int, height:int}|null

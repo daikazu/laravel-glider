@@ -142,6 +142,60 @@ Laravel Glider supports all [League/Glide manipulation parameters](https://glide
 <x-glide-img src="image.jpg" glide-w="400" glide-filt="greyscale" />
 ```
 
+#### Focal Point (CSS Positioning)
+
+Control where the image is positioned within its container using CSS `object-position` (for `<img>` tags) or `background-position` (for backgrounds).
+
+This is useful when the container dimensions differ from the image aspect ratio - the focal point determines which part of the image remains visible:
+
+```html
+{{-- Named positions --}}
+<x-glide-img src="portrait.jpg" focal-point="top" glide-w="400" glide-h="300" />
+<x-glide-img src="person.jpg" focal-point="center" glide-w="400" glide-h="300" />
+<x-glide-img src="photo.jpg" focal-point="bottom-right" glide-w="400" glide-h="300" />
+
+{{-- Custom percentages (x,y from left/top) --}}
+<x-glide-img src="image.jpg" focal-point="75,25" glide-w="400" glide-h="300" />
+<x-glide-img src="image.jpg" focal-point="20, 80" glide-w="400" glide-h="300" />
+
+{{-- Works with responsive images too --}}
+<x-glide-bg-responsive src="photo.jpg" focal-point="top-left" />
+
+{{-- And background images --}}
+<x-glide-bg src="hero.jpg" focal-point="75,25" preset="hero">
+    <h1>Hero Content</h1>
+</x-glide-bg>
+```
+
+**Supported named positions:**
+- `center` (default)
+- `top`, `bottom`, `left`, `right`
+- `top-left`, `top-right`, `bottom-left`, `bottom-right`
+
+**How it works:**
+- For `<img>` elements: Adds `object-fit: cover` and `object-position: X% Y%`
+- For backgrounds: Sets `background-position: X% Y%` in the generated CSS
+- Custom percentages: `"75,25"` = 75% from left, 25% from top (0-100 range)
+
+**Note:** This is CSS-based positioning in the browser. For server-side crop focal point (where Glide physically crops the image before sending), use `glide-fit` with crop positions:
+
+```html
+{{-- Server-side crop with named position --}}
+<x-glide-img src="image.jpg" glide-w="400" glide-h="300" glide-fit="crop-top-left" />
+
+{{-- Server-side crop with focal point percentages --}}
+<x-glide-img src="image.jpg" glide-w="400" glide-h="300" glide-fit="crop-25-75" />
+
+{{-- Server-side crop with zoom (crop-x%-y%-zoom) --}}
+<x-glide-img src="image.jpg" glide-w="400" glide-h="300" glide-fit="crop-25-75-2" />
+
+{{-- CSS focal point (full image sent, browser positions it) --}}
+<x-glide-img src="image.jpg" glide-w="400" glide-h="300" focal-point="75,25" />
+
+{{-- Both: Server crops at focal point, then browser positions the result --}}
+<x-glide-img src="image.jpg" glide-w="400" glide-h="300" glide-fit="crop-25-75" focal-point="top-right" />
+```
+
 ### Using Presets
 
 Define common image sizes in your configuration and reference them:
@@ -284,7 +338,16 @@ php artisan glider:convert-img-tags
 
 #### Image Components
 
-The `<x-glide-img>` and `<x-glide-bg-responsive>` components accept all standard HTML img attributes plus Glide parameters prefixed with `glide-`:
+The `<x-glide-img>` and `<x-glide-bg-responsive>` components accept all standard HTML img attributes plus:
+
+##### Image-Specific Attributes
+- `src` - Image source path (required)
+- `focal-point` - Image focal point for cropping (see [Focal Point](#focal-point-image-positioning) section)
+  - Named positions: `center`, `top`, `bottom`, `left`, `right`, `top-left`, `top-right`, `bottom-left`, `bottom-right`
+  - Custom percentages: `"75,25"` (x,y from left/top, 0-100 range)
+  - Applies CSS `object-fit: cover` and `object-position` automatically
+- All Glide parameters (prefix with `glide-`)
+- Any standard HTML `<img>` attributes
 
 #### Background Component
 
@@ -294,8 +357,12 @@ The `<x-glide-bg>` component provides responsive background image functionality:
 - `src` - Background image source path (required)
 - `preset` - Use predefined background preset from config
 - `breakpoints` - Array of custom breakpoints and parameters
-- `position` - CSS background-position (default: 'center')
-- `size` - CSS background-size (default: 'cover')  
+- `focal-point` - Background focal point for all breakpoints (see [Focal Point](#focal-point-image-positioning) section)
+  - Named positions: `center`, `top`, `bottom`, `left`, `right`, etc.
+  - Custom percentages: `"75,25"` (x,y from left/top, 0-100 range)
+  - Sets CSS `background-position` in generated media queries
+- `position` - CSS background-position (default: 'center', overridden by `focal-point`)
+- `size` - CSS background-size (default: 'cover')
 - `repeat` - CSS background-repeat (default: 'no-repeat')
 - `attachment` - CSS background-attachment (default: 'scroll')
 - `fallback` - Fallback image for loading states
@@ -306,7 +373,11 @@ The `<x-glide-bg>` component provides responsive background image functionality:
 #### Glide Parameters (prefix with `glide-`)
 - `glide-w` - Width in pixels
 - `glide-h` - Height in pixels
-- `glide-fit` - Fit mode (`crop`, `contain`, `fill`, `stretch`, `max`)
+- `glide-fit` - Fit mode with optional crop position
+  - Basic: `crop`, `contain`, `fill`, `stretch`, `max`
+  - Crop with position: `crop-top`, `crop-top-left`, `crop-center`, `crop-bottom-right`, etc.
+  - Crop with focal point: `crop-25-75` (x%-y% percentages)
+  - Crop with zoom: `crop-25-75-2` (x%-y%-zoom, zoom range 1-10)
 - `glide-q` - Quality (1-100)
 - `glide-fm` - Format (`jpg`, `png`, `gif`, `webp`, `avif`)
 - `glide-blur` - Blur amount (0.5-1000)
@@ -315,7 +386,7 @@ The `<x-glide-bg>` component provides responsive background image functionality:
 - `glide-gam` - Gamma (0.1-9.99)
 - `glide-sharp` - Sharpen (0-100)
 - `glide-filt` - Filter (`greyscale`, `sepia`)
-- `glide-crop` - Crop coordinates
+- `glide-crop` - Specific crop dimensions (`width,height,x,y`)
 - `glide-bg` - Background color
 - `glide-border` - Border width and color
 - `glide-or` - Orientation (0, 90, 180, 270)

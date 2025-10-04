@@ -20,13 +20,16 @@ class BgResponsive extends Component
         public string $src,
         public ?string $preset = null,
         public ?array $breakpoints = null,
-        public string $position = 'center',
+        public ?string $position = null,
         public string $size = 'cover',
         public string $repeat = 'no-repeat',
         public string $attachment = 'scroll',
         public ?string $fallback = null,
         public bool $lazy = false,
-    ) {}
+    ) {
+        // Handle focal-point attribute for background-position
+        // Will be set via attributes, but we initialize position with a default if not provided
+    }
 
     public function render()
     {
@@ -230,6 +233,81 @@ class BgResponsive extends Component
     }
 
     /**
+     * Get the background-position CSS value
+     * Uses focal-point attribute if provided, otherwise falls back to position property
+     */
+    public function getBackgroundPosition(): string
+    {
+        // Check for focal-point attribute first
+        if ($this->attributes->has('focal-point')) {
+            $bgPosition = $this->parseFocalPoint($this->attributes->get('focal-point'));
+            if ($bgPosition !== null) {
+                return $bgPosition;
+            }
+        }
+
+        // Fall back to position property
+        return $this->position ?? 'center';
+    }
+
+    /**
+     * Parse focal point attribute into CSS background-position value
+     *
+     * Accepts formats:
+     * - "50,50" or "50, 50" - x,y percentages (0-100)
+     * - "center" - shorthand for 50% 50%
+     * - "top" - shorthand for 50% 0%
+     * - "bottom" - shorthand for 50% 100%
+     * - "left" - shorthand for 0% 50%
+     * - "right" - shorthand for 100% 50%
+     * - "top-left" - shorthand for 0% 0%
+     * - "top-right" - shorthand for 100% 0%
+     * - "bottom-left" - shorthand for 0% 100%
+     * - "bottom-right" - shorthand for 100% 100%
+     */
+    protected function parseFocalPoint(mixed $focalPoint): ?string
+    {
+        if (! is_string($focalPoint) || $focalPoint === '' || $focalPoint === '0') {
+            return null;
+        }
+
+        $focalPoint = strtolower(trim($focalPoint));
+
+        // Named positions
+        $namedPositions = [
+            'center'       => '50% 50%',
+            'top'          => '50% 0%',
+            'bottom'       => '50% 100%',
+            'left'         => '0% 50%',
+            'right'        => '100% 50%',
+            'top-left'     => '0% 0%',
+            'top-right'    => '100% 0%',
+            'bottom-left'  => '0% 100%',
+            'bottom-right' => '100% 100%',
+        ];
+
+        if (isset($namedPositions[$focalPoint])) {
+            return $namedPositions[$focalPoint];
+        }
+
+        // Parse x,y coordinates
+        if (str_contains($focalPoint, ',')) {
+            $parts = array_map('trim', explode(',', $focalPoint));
+            if (count($parts) === 2) {
+                $x = (int) $parts[0];
+                $y = (int) $parts[1];
+
+                // Validate range 0-100
+                if ($x >= 0 && $x <= 100 && $y >= 0 && $y <= 100) {
+                    return "{$x}% {$y}%";
+                }
+            }
+        }
+
+        return null;
+    }
+
+    /**
      * Merge Glide attributes from component attributes
      */
     protected function mergeGlideAttributes(array $params = []): array
@@ -247,7 +325,7 @@ class BgResponsive extends Component
     {
         $properties = [
             "background-image: url('{$url}')",
-            "background-position: {$this->position}",
+            "background-position: {$this->getBackgroundPosition()}",
             "background-size: {$this->size}",
             "background-repeat: {$this->repeat}",
             "background-attachment: {$this->attachment}",
