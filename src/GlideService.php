@@ -38,12 +38,12 @@ final class GlideService
         $routeParams = $this->getRouteParams($path, $params);
         $fullRoute = route('glide', $routeParams, false);
 
-        return ltrim(Str::after($fullRoute, '/' . config('glider.base_url')), '/');
+        return ltrim(Str::after($fullRoute, '/' . config('laravel-glider.base_url')), '/');
     }
 
     public function getSourceFilesystem(string $path): Filesystem
     {
-        $adapter = new LocalFilesystemAdapter(config('glider.source'));
+        $adapter = new LocalFilesystemAdapter(config('laravel-glider.source'));
         if (Str::isUrl($path)) {
             // Extract base URL for HTTP filesystem
             $baseUrl = parse_url($path, PHP_URL_SCHEME) . '://' . parse_url($path, PHP_URL_HOST);
@@ -69,7 +69,7 @@ final class GlideService
         // Sometimes we can directly serve the image from the public disk
         if ($params === []) {
             $publicRoot = config('filesystems.disks.public.root');
-            $sourceRoot = config('glider.source');
+            $sourceRoot = config('laravel-glider.source');
 
             if (is_string($publicRoot) && is_string($sourceRoot) && Str::startsWith($sourceRoot, $publicRoot)) {
                 return Storage::disk('public')->url($path);
@@ -115,7 +115,7 @@ final class GlideService
      */
     public function getBackgroundPreset(string $presetName): array
     {
-        $presets = config('glider.background_presets', []);
+        $presets = config('laravel-glider.background_presets', []);
 
         if (! isset($presets[$presetName])) {
             throw new InvalidArgumentException("Background preset '{$presetName}' not found");
@@ -192,7 +192,7 @@ final class GlideService
 
     private function encodePath(string $path): string
     {
-        if (Str::isUrl($path) && Str::startsWith($path, config('app.url')) && ! Str::startsWith($path, url(config('glider.base_url')))) {
+        if (Str::isUrl($path) && Str::startsWith($path, config('app.url')) && ! Str::startsWith($path, url(config('laravel-glider.base_url')))) {
             $path = Str::after($path, config('app.url'));
         }
 

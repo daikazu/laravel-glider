@@ -145,7 +145,7 @@ class BgResponsive extends Component
      */
     protected function getPresetBreakpoints(): Collection
     {
-        $presets = config('glider.background_presets', []);
+        $presets = config('laravel-glider.background_presets', []);
 
         if (! isset($presets[$this->preset])) {
             throw new InvalidArgumentException("Background preset '{$this->preset}' not found in config");

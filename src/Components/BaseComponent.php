@@ -66,7 +66,7 @@ class BaseComponent extends Component
             return $this->dimensions;
         }
 
-        $imagePath = join_paths(config('glider.source'), $this->src);
+        $imagePath = join_paths(config('laravel-glider.source'), $this->src);
         if (! is_file($imagePath)) {
             return $this->dimensions = null;
         }

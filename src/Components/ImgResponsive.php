@@ -51,7 +51,7 @@ class ImgResponsive extends BaseComponent
      */
     protected function getSrcsetWidthsFromImg(): ?array
     {
-        $imagePath = join_paths(config('glider.source'), $this->src);
+        $imagePath = join_paths(config('laravel-glider.source'), $this->src);
         if (! file_exists($imagePath)) {
             return null;
         }
@@ -114,7 +114,7 @@ class ImgResponsive extends BaseComponent
         if ($this->srcsetWidths !== null) {
             $key = 'glide:' . sha1($this->src) . ':srcset_widths:custom:' . md5(implode(',', $this->srcsetWidths));
         } else {
-            $imagePath = join_paths(config('glider.source'), $this->src);
+            $imagePath = join_paths(config('laravel-glider.source'), $this->src);
             $mtime = is_file($imagePath) ? (filemtime($imagePath) ?: 0) : 0;
             $key = 'glide:' . sha1($this->src) . ':srcset_widths:img:' . $mtime;
         }
