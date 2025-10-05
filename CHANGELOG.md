@@ -2,6 +2,24 @@
 
 All notable changes to `laravel-glider` will be documented in this file.
 
+## v3.1.0 - 2025-10-05
+
+### Features
+
+- **Remote Image Support**: Images from external URLs are now properly processed, cached, and optimized #
+  - Remote images automatically apply config defaults (format, quality, etc.)
+  - Processed images are cached locally for better performance
+  - All Glide manipulations work seamlessly with remote sources
+  
+- Added `Glider::url()` alias for `Glider::getUrl()`
+
+### Bug Fixes
+
+- Resolved PHPStan level 5 analysis errors with `parse_url()` type checks
+- Fixed test compatibility between Orchestra Testbench v9 and v10
+
+**Full Changelog**: https://github.com/daikazu/laravel-glider/compare/v3.0.5...v3.1.0
+
 ## v3.0.4 - 2025-10-04
 
 **Full Changelog**: https://github.com/daikazu/laravel-glider/compare/v3.0.3...v3.0.4
@@ -63,7 +81,6 @@ Features:
 - Improved: Better attribute handling and performance
 - Enhanced: Automatic srcset generation
 ⚙️ Advanced Configuration System
-
 - Background Presets: Pre-configured responsive breakpoints for common use cases
 - Enhanced Security: Improved URL signing and validation
 - Better Defaults: WebP format and optimized quality settings by default
