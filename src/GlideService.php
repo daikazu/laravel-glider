@@ -47,7 +47,7 @@ final class GlideService
         if (Str::isUrl($path)) {
             // Extract base URL for HTTP filesystem
             $parsedUrl = parse_url($path);
-            if ($parsedUrl === 0 || ($parsedUrl === '' || $parsedUrl === '0') || $parsedUrl === [] || $parsedUrl === false || $parsedUrl === null || ! isset($parsedUrl['scheme'], $parsedUrl['host'])) {
+            if ($parsedUrl === false || ! isset($parsedUrl['scheme'], $parsedUrl['host'])) {
                 throw new InvalidArgumentException("Invalid URL provided: {$path}");
             }
 
@@ -71,7 +71,7 @@ final class GlideService
     {
         if (Str::isUrl($path)) {
             $parsedUrl = parse_url($path);
-            if ($parsedUrl === 0 || ($parsedUrl === '' || $parsedUrl === '0') || $parsedUrl === [] || $parsedUrl === false || $parsedUrl === null) {
+            if ($parsedUrl === false) {
                 return $path;
             }
 
