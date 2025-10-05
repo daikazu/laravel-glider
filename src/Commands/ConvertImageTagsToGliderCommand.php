@@ -145,9 +145,9 @@ class ConvertImageTagsToGliderCommand extends Command
         $pattern = '/<img\s+([^>]*?)src=(["\'])((?:(?!\2).)*)\2([^>]*?)>/i';
 
         return preg_replace_callback($pattern, function (array $matches) use ($useResponsive, $imagePath): string {
-            $beforeSrc = trim((string) $matches[1]);
+            $beforeSrc = trim($matches[1]);
             $srcValue = $matches[3]; // The actual src value is now in group 3
-            $afterSrc = trim((string) $matches[4]); // After src attributes are in group 4
+            $afterSrc = trim($matches[4]); // After src attributes are in group 4
 
             // Extract all attributes from the original img tag
             $allAttributes = $this->extractAllAttributes($beforeSrc . ' ' . $afterSrc);

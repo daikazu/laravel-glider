@@ -47,7 +47,7 @@ final class GlideService
         if (Str::isUrl($path)) {
             // Extract base URL for HTTP filesystem
             $parsedUrl = parse_url($path);
-            if (! $parsedUrl || ! isset($parsedUrl['scheme'], $parsedUrl['host'])) {
+            if ($parsedUrl === 0 || ($parsedUrl === '' || $parsedUrl === '0') || $parsedUrl === [] || $parsedUrl === false || $parsedUrl === null || ! isset($parsedUrl['scheme'], $parsedUrl['host'])) {
                 throw new InvalidArgumentException("Invalid URL provided: {$path}");
             }
 
@@ -71,7 +71,7 @@ final class GlideService
     {
         if (Str::isUrl($path)) {
             $parsedUrl = parse_url($path);
-            if (! $parsedUrl) {
+            if ($parsedUrl === 0 || ($parsedUrl === '' || $parsedUrl === '0') || $parsedUrl === [] || $parsedUrl === false || $parsedUrl === null) {
                 return $path;
             }
 
@@ -198,7 +198,7 @@ final class GlideService
     private function getRouteParams(string $path, array $parameters = []): array
     {
         $pathForExt = (string) parse_url($path, PHP_URL_PATH);
-        $ext = strtolower(! in_array(pathinfo($pathForExt, PATHINFO_EXTENSION), ['', '0'], true) ? pathinfo($pathForExt, PATHINFO_EXTENSION) : '');
+        $ext = strtolower(in_array(pathinfo($pathForExt, PATHINFO_EXTENSION), ['', '0'], true) ? '' : pathinfo($pathForExt, PATHINFO_EXTENSION));
 
         // Merge with server defaults/presets so fm from presets/defaults is considered
         $resolvedParams = $parameters;

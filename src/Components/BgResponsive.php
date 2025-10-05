@@ -184,7 +184,7 @@ class BgResponsive extends Component
      */
     protected function buildBreakpointsFromArray(array $breakpoints): Collection
     {
-        if (empty($breakpoints)) {
+        if ($breakpoints === []) {
             throw new InvalidArgumentException('Breakpoints array cannot be empty');
         }
 
