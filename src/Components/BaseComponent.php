@@ -49,12 +49,6 @@ class BaseComponent extends Component
         return $dims['height'] ?? null;
     }
 
-    protected function glideAttributes(): Collection
-    {
-        return collect($this->attributes->whereStartsWith('glide-'))
-            ->mapWithKeys(fn ($item, string $key) => [Str::after($key, 'glide-') => $item]);
-    }
-
     /**
      * Get the object-position CSS value from focal-point attribute
      *
@@ -116,6 +110,12 @@ class BaseComponent extends Component
         }
 
         return null;
+    }
+
+    protected function glideAttributes(): Collection
+    {
+        return collect($this->attributes->whereStartsWith('glide-'))
+            ->mapWithKeys(fn ($item, string $key) => [Str::after($key, 'glide-') => $item]);
     }
 
     /**

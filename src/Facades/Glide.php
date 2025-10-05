@@ -15,6 +15,7 @@ use League\Flysystem\Filesystem;
  * @method static array decodeParams(string $string)
  * @method static string getCachePath(string $path, array $params = [])
  * @method static Filesystem getSourceFilesystem(string $path)
+ * @method static string getImagePath(string $path)
  * @method static string getUrl(string $path, array $params = [])
  * @method static array getResponsiveBackgroundUrls(string $path, array $breakpoints = [], array $baseParams = [])
  * @method static array getBackgroundPreset(string $presetName)

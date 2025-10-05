@@ -55,10 +55,6 @@ final class GlideService
             if (isset($parsedUrl['port'])) {
                 $baseUrl .= ':' . $parsedUrl['port'];
             }
-            // Include base path if present (e.g., https://cdn.example.com/images)
-            if (isset($parsedUrl['path']) && $parsedUrl['path'] !== '' && $parsedUrl['path'] !== '/') {
-                $baseUrl .= rtrim($parsedUrl['path'], '/');
-            }
 
             $adapter = HttpAdapterPsr::fromUrl($baseUrl);
         }
@@ -66,18 +62,38 @@ final class GlideService
         return new Filesystem($adapter);
     }
 
+    /**
+     * Get the image path to use with the filesystem adapter
+     * For URLs, returns the path+query portion
+     * For local paths, returns the path as-is
+     */
+    public function getImagePath(string $path): string
+    {
+        if (Str::isUrl($path)) {
+            $parsedUrl = parse_url($path);
+            if (! $parsedUrl) {
+                return $path;
+            }
+
+            $imagePath = $parsedUrl['path'] ?? '/';
+            if (isset($parsedUrl['query'])) {
+                $imagePath .= '?' . $parsedUrl['query'];
+            }
+
+            return ltrim($imagePath, '/');
+        }
+
+        return $path;
+    }
+
     public function getUrl(string $path, array $params = []): string
     {
         // The signature is created later and should be ignored even if provided as a parameter
         unset($params['s']);
 
-        // Sometimes we can directly serve the image
-        if ($params === [] && Str::isUrl($path)) {
-            return $path;
-        }
-
         // Sometimes we can directly serve the image from the public disk
-        if ($params === []) {
+        // (Only for local paths, not URLs)
+        if ($params === [] && ! Str::isUrl($path)) {
             $publicRoot = config('filesystems.disks.public.root');
             $sourceRoot = config('laravel-glider.source');
 

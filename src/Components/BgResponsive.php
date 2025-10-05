@@ -119,12 +119,30 @@ class BgResponsive extends Component
         $breakpoints = $this->getBreakpoints();
 
         return [
-            'data-bg-lazy'   => 'true',
-            'data-bg-src'    => $breakpoints->first()['url'] ?? '',
+            'data-bg-lazy' => 'true',
+            'data-bg-src'  => $breakpoints->first()['url'] ?? '',
             // For background images with media queries, we store the breakpoint info differently
             // The lazy loader should use min_width as the media query breakpoint, not as the image width
             'data-bg-srcset' => $breakpoints->map(fn (array $bp): string => "{$bp['url']} {$bp['min_width']}px")->implode(', '),
         ];
+    }
+
+    /**
+     * Get the background-position CSS value
+     * Uses focal-point attribute if provided, otherwise falls back to position property
+     */
+    public function getBackgroundPosition(): string
+    {
+        // Check for focal-point attribute first
+        if ($this->attributes->has('focal-point')) {
+            $bgPosition = $this->parseFocalPoint($this->attributes->get('focal-point'));
+            if ($bgPosition !== null) {
+                return $bgPosition;
+            }
+        }
+
+        // Fall back to position property
+        return $this->position ?? 'center';
     }
 
     /**
@@ -230,24 +248,6 @@ class BgResponsive extends Component
         ];
 
         return $breakpointMap[$breakpoint] ?? 0;
-    }
-
-    /**
-     * Get the background-position CSS value
-     * Uses focal-point attribute if provided, otherwise falls back to position property
-     */
-    public function getBackgroundPosition(): string
-    {
-        // Check for focal-point attribute first
-        if ($this->attributes->has('focal-point')) {
-            $bgPosition = $this->parseFocalPoint($this->attributes->get('focal-point'));
-            if ($bgPosition !== null) {
-                return $bgPosition;
-            }
-        }
-
-        // Fall back to position property
-        return $this->position ?? 'center';
     }
 
     /**

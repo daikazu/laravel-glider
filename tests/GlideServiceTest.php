@@ -86,11 +86,14 @@ test('it handles URLs with base paths', function () {
     expect($filesystem)->toBeInstanceOf(\League\Flysystem\Filesystem::class);
 });
 
-test('it returns direct URL when no params and URL provided', function () {
+test('it processes remote URLs even with no explicit params', function () {
     $service = new GlideService;
     $url = 'https://example.com/image.jpg';
 
-    expect($service->getUrl($url, []))->toBe($url);
+    // With config defaults, remote URLs should be processed, not returned directly
+    $result = $service->getUrl($url, []);
+    expect($result)->toContain('/img/'); // Should generate a Glide route
+    expect($result)->not->toBe($url); // Should not be the original URL
 });
 
 test('it removes signature param from params', function () {

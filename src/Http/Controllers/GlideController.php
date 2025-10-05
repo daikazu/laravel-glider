@@ -24,8 +24,11 @@ class GlideController
         $server->setSource($sourceFilesystem);
         $server->setCachePathCallable(fn (string $path, array $params = []): string => Glide::getCachePath($path, $params));
 
+        // For HTTP sources, extract just the filename since the adapter has the base URL
+        $imagePath = Glide::getImagePath($path);
+
         try {
-            return $server->getImageResponse($path, $params);
+            return $server->getImageResponse($imagePath, $params);
         } catch (FileNotFoundException | FilesystemException) {
             throw new NotFoundHttpException;
         }

@@ -47,6 +47,11 @@ function makeGlideStub(string $decodedPath, array $decodedParams, Filesystem $fi
             }
             return 'some/cache/path';
         }
+
+        public function getImagePath(string $path): string
+        {
+            return $path;
+        }
     };
 }
 

@@ -15,9 +15,10 @@ Laravel Glider is a powerful Laravel package that provides on-the-fly image mani
 
 - **On-the-fly Image Processing**: Transform images dynamically with URL parameters
 - **Responsive Images**: Automatic srcset generation for optimal loading
+- **Remote Image Support**: Process and cache images from external URLs
 - **Security**: Signed URLs prevent unauthorized image manipulation
 - **Performance**: Built-in caching with Laravel's cache system
-- **Flexible Sources**: Support for local filesystem
+- **Flexible Sources**: Support for local filesystem and remote HTTP sources
 - **Blade Components**: Clean, reusable components for your templates
 - **Presets**: Pre-defined image manipulation configurations
 - **Artisan Commands**: Clear cache and convert existing image tags
@@ -91,13 +92,49 @@ The package provides convenient Blade components for generating image tags:
 />
 
 {{-- Responsive image with multiple sizes using srcset --}}
-<x-glide-bg-responsive 
+<x-glide-bg-responsive
     src="hero-image.jpg"
     width="1200"
     loading="lazy"
     alt="Hero image"
 />
 ```
+
+### Remote Images
+
+Laravel Glider supports processing images from remote URLs. Remote images are automatically downloaded, processed, and cached locally:
+
+```html
+{{-- Process remote image with resizing --}}
+<x-glide-img
+    src="https://example.com/path/to/image.jpg"
+    glide-w="600"
+    glide-q="85"
+    alt="Remote image"
+/>
+
+{{-- Remote image with format conversion --}}
+<x-glide-img
+    src="https://cdn.example.com/photo.png"
+    glide-w="400"
+    glide-fm="webp"
+    alt="Converted to WebP"
+/>
+```
+
+**How it works:**
+- The image is fetched from the remote URL
+- All Glide manipulations are applied (resize, format conversion, quality, etc.)
+- The processed image is cached locally for better performance
+- Subsequent requests serve the cached version
+
+**Benefits:**
+- Apply consistent optimization to all images, regardless of source
+- Convert remote images to modern formats (WebP, AVIF)
+- Resize and optimize external images to fit your design
+- Reduce bandwidth by caching processed versions
+
+**Note:** Even without explicit parameters, remote images will be processed using your configured defaults (e.g., `fm: webp`, `q: 85` from `config/laravel-glider.php`).
 
 ### Image Manipulation Parameters
 
