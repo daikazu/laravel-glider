@@ -121,6 +121,14 @@ final class GlideService
     }
 
     /**
+     * Alias for getUrl()
+     */
+    public function url(string $path, array $params = []): string
+    {
+        return $this->getUrl($path, $params);
+    }
+
+    /**
      * Generate responsive background URLs for multiple breakpoints
      */
     public function getResponsiveBackgroundUrls(string $path, array $breakpoints = [], array $baseParams = []): array

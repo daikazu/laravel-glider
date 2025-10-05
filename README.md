@@ -69,8 +69,11 @@ use Daikazu\LaravelGlider\Facades\Glide;
 // Generate a URL for a resized image
 $url = Glide::getUrl('path/to/image.jpg', ['w' => 400, 'h' => 300]);
 
+// Or use the shorter alias
+$url = Glide::url('path/to/image.jpg', ['w' => 400, 'h' => 300]);
+
 // Generate a URL with quality and format settings
-$url = Glide::getUrl('image.jpg', [
+$url = Glide::url('image.jpg', [
     'w' => 800,
     'q' => 85,
     'fm' => 'webp'

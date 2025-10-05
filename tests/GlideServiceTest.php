@@ -103,6 +103,14 @@ test('it removes signature param from params', function () {
     expect($url)->not->toContain('should-be-removed');
 });
 
+test('url() is an alias for getUrl()', function () {
+    $service = new GlideService;
+    $path = 'image.jpg';
+    $params = ['w' => 400, 'h' => 300, 'q' => 85];
+
+    expect($service->url($path, $params))->toBe($service->getUrl($path, $params));
+});
+
 test('it generates responsive background URLs', function () {
     $service = new GlideService;
     $breakpoints = [
