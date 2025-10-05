@@ -8,6 +8,16 @@ use Orchestra\Testbench\TestCase as Orchestra;
 
 class TestCase extends Orchestra
 {
+    /**
+     * The latest response instance.
+     *
+     * This property is defined in Testbench v10+ but not v9.
+     * We define it here for backward compatibility with both versions.
+     *
+     * @var \Illuminate\Testing\TestResponse|null
+     */
+    public static $latestResponse = null;
+
     protected function setUp(): void
     {
         parent::setUp();
