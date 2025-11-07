@@ -387,6 +387,40 @@ The package validates and sanitizes:
 - `attachment` attributes
 - `focal-point` values
 
+### SSRF Protection
+
+When processing remote images via URLs, Laravel Glider protects against Server-Side Request Forgery (SSRF) attacks:
+
+```html
+<!-- Safe: Public URLs are allowed -->
+<x-glide-img src="https://cdn.example.com/image.jpg" glide-w="400" />
+
+<!-- Blocked: Private/internal targets are prevented -->
+❌ http://localhost/admin/secret.jpg
+❌ http://127.0.0.1/internal/image.jpg
+❌ http://192.168.1.1/router-config.jpg
+❌ http://10.0.0.5/database-backup.jpg
+❌ http://169.254.169.254/latest/meta-data (AWS metadata)
+```
+
+**Protections implemented:**
+
+- **Blocks localhost access** - Prevents requests to `localhost`, `127.0.0.1`, `::1`, and `0.0.0.0`
+- **Blocks private IP ranges** - Rejects RFC1918 private addresses (10.x.x.x, 172.16-31.x.x, 192.168.x.x)
+- **Blocks link-local addresses** - Prevents access to 169.254.x.x range (cloud metadata endpoints)
+- **Blocks dangerous ports** - Rejects connections to common internal service ports (SSH:22, MySQL:3306, Redis:6379, etc.)
+- **Validates URL schemes** - Only allows `http://` and `https://` protocols
+- **DNS resolution validation** - Resolves hostnames to IPs and validates against private ranges
+
+These protections prevent attackers from:
+- Scanning internal network infrastructure
+- Accessing cloud provider metadata endpoints
+- Reaching internal services and databases
+- Port scanning internal systems
+- Bypassing firewall rules via your server
+
+All SSRF protections are automatic and require no configuration.
+
 ### Security Best Practices
 
 Follow these recommendations to maintain secure image processing:
