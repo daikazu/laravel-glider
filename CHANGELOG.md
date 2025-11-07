@@ -2,16 +2,59 @@
 
 All notable changes to `laravel-glider` will be documented in this file.
 
+## v3.2.0 - Security Hardening & Component Fixes - 2025-11-07
+
+🔒 Security Enhancements
+
+Comprehensive security protections now enabled by default:
+
+- SSRF Protection - Blocks malicious remote URLs targeting internal networks, cloud metadata endpoints, and
+  private IP ranges
+- Path Traversal Protection - Prevents directory traversal attacks, null byte injection, and symlink exploits
+- XSS Protection - Sanitizes CSS values in background components to prevent injection attacks
+
+All protections are automatic and require no configuration.
+
+⚠️ Breaking Change
+
+URL signing now defaults to true (previously false) to prevent DoS attacks. For local development, add
+GLIDE_SECURE=false to your .env file if needed. Never disable in production.
+
+✨ New Features
+
+- Added missing `<x-glide-bg>` component for non-responsive background images
+
+🐛 Bug Fixes
+
+- Fixed inconsistent vendor:publish tag naming (now consistently prefixed with glider-)
+- Fixed component view namespace resolution
+
+📚 Documentation
+
+- Added comprehensive Security section to README
+- Refactored README for better readability
+- Added security best practices and examples
+
+🧪 Tests
+
+- Added 50+ security tests (Path Traversal, XSS, SSRF)
+
+🔄 Upgrade
+
+composer update daikazu/laravel-glider
+
 ## v3.1.0 - 2025-10-05
 
 ### Features
 
 - **Remote Image Support**: Images from external URLs are now properly processed, cached, and optimized #
+  
   - Remote images automatically apply config defaults (format, quality, etc.)
   - Processed images are cached locally for better performance
   - All Glide manipulations work seamlessly with remote sources
   
 - Added `Glider::url()` alias for `Glider::getUrl()`
+  
 
 ### Bug Fixes
 
@@ -85,7 +128,6 @@ Features:
 - Enhanced Security: Improved URL signing and validation
 - Better Defaults: WebP format and optimized quality settings by default
 - Environment Variables: More configuration options via .env
-
 📚 Comprehensive Documentation
 
 - Complete API Reference: Full documentation of all components and methods
