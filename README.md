@@ -35,6 +35,7 @@ php artisan vendor:publish --tag="glider-config"
 
 The cache directory is created automatically with `.gitignore` added.
 
+
 ## Quick Start
 
 ### Basic Image
@@ -74,6 +75,8 @@ The cache directory is created automatically with `.gitignore` added.
     glide-w="1440"
     glide-h="600"
 />
+    <h1>Content</h1>
+</x-glide-bg-responsive>
 ```
 
 ### Using the Facade
@@ -173,7 +176,11 @@ Create responsive backgrounds with automatic media queries:
         'xs' => ['w' => 768, 'h' => 300],
         'lg' => ['w' => 1440, 'h' => 500]
     ]"
-/>
+>
+    <div class="content">
+        <h1>Hero Title</h1>
+    </div>
+</x-glide-bg>
 ```
 
 **Background presets** in config:
@@ -316,6 +323,116 @@ return [
 - Laravel 11.x or 12.x
 - GD or Imagick extension
 - League/Glide 3.x
+
+## Security
+
+Laravel Glider implements multiple security layers to protect your application from common attacks. These features work together to ensure safe image processing.
+
+### URL Signing
+
+**Status:** Enabled by default (`GLIDE_SECURE=true`)
+
+URL signing prevents unauthorized image manipulation and protects against denial-of-service attacks. When enabled, all image URLs are cryptographically signed using your application key.
+
+```php
+// config/laravel-glider.php
+'secure' => env('GLIDE_SECURE', true),
+```
+
+**Important:** URL signing should **NEVER** be disabled in production environments. Unsigned URLs allow attackers to:
+- Generate infinite variations of images, exhausting server resources
+- Perform expensive image operations repeatedly
+- Fill disk space with cached attack images
+
+The signing mechanism uses Laravel's `APP_KEY` by default. Ensure your application key is:
+- Generated with `php artisan key:generate`
+- Kept secure and never committed to version control
+- Properly configured in production environments
+
+### Path Traversal Protection
+
+Laravel Glider validates all file paths to prevent directory traversal attacks. The package automatically:
+
+- **Validates path boundaries** - Ensures all paths resolve within the configured source directory
+- **Blocks null bytes** - Prevents null byte injection attacks (`../../../etc/passwd%00.jpg`)
+- **Prevents symlink attacks** - Validates real paths to stop symlink-based directory escapes
+- **Sanitizes input** - Removes dangerous characters from file paths
+
+Example of blocked attacks:
+```
+❌ ../../../etc/passwd
+❌ /var/www/../../etc/shadow
+❌ image.jpg%00.php
+❌ symlink-to-sensitive-dir/file.jpg
+```
+
+These protections are automatic and require no configuration.
+
+### XSS Protection
+
+Background image components sanitize CSS values to prevent cross-site scripting attacks via CSS injection:
+
+```html
+<!-- Safe: CSS values are sanitized -->
+<x-glide-bg src="hero.jpg" position="center top" />
+
+<!-- Protected: Malicious CSS is blocked -->
+<x-glide-bg src="hero.jpg" position="center; background: url(javascript:alert('XSS'))" />
+```
+
+The package validates and sanitizes:
+- `position` attributes
+- `size` attributes
+- `repeat` attributes
+- `attachment` attributes
+- `focal-point` values
+
+### Security Best Practices
+
+Follow these recommendations to maintain secure image processing:
+
+1. **Keep URL signing enabled**
+   ```bash
+   # .env (production)
+   GLIDE_SECURE=true
+   ```
+
+2. **Use a strong application key**
+   ```bash
+   # Generate a secure key
+   php artisan key:generate
+   ```
+
+3. **Validate source paths**
+   ```php
+   // Ensure images are within intended directories
+   'source' => resource_path('assets/images'),
+   ```
+
+4. **Limit maximum image dimensions**
+   ```php
+   // config/laravel-glider.php
+   'max_image_size' => 2000 * 2000, // Prevent memory exhaustion
+   ```
+
+5. **Keep the package updated**
+   ```bash
+   composer update daikazu/laravel-glider
+   ```
+
+6. **Use HTTPS in production**
+    - Protects signed URLs from interception
+    - Prevents man-in-the-middle attacks on image requests
+
+7. **Configure appropriate cache permissions**
+   ```bash
+   # Ensure cache directory has proper permissions
+   chmod 755 storage/app/glider-cache
+   ```
+
+### Reporting Security Issues
+
+If you discover a security vulnerability, please email [daikazu@gmail.com] or use the [GitHub Security Advisory](https://github.com/daikazu/laravel-glider/security) feature. Do not create public issues for security vulnerabilities.
 
 ## Testing
 

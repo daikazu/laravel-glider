@@ -323,16 +323,41 @@ class BgResponsive extends Component
      */
     protected function generateCSSRule(string $selector, string $url, array $params, bool $includeSelector = true): string
     {
+        // Sanitize all values for CSS context
+        $safeUrl = $this->sanitizeCSSUrl($url);
+        $safePosition = $this->sanitizeCSSValue($this->getBackgroundPosition());
+        $safeSize = $this->sanitizeCSSValue($this->size);
+        $safeRepeat = $this->sanitizeCSSValue($this->repeat);
+        $safeAttachment = $this->sanitizeCSSValue($this->attachment);
+
         $properties = [
-            "background-image: url('{$url}')",
-            "background-position: {$this->getBackgroundPosition()}",
-            "background-size: {$this->size}",
-            "background-repeat: {$this->repeat}",
-            "background-attachment: {$this->attachment}",
+            "background-image: url('{$safeUrl}')",
+            "background-position: {$safePosition}",
+            "background-size: {$safeSize}",
+            "background-repeat: {$safeRepeat}",
+            "background-attachment: {$safeAttachment}",
         ];
 
         $rule = implode('; ', $properties) . ';';
 
         return $includeSelector ? "{$selector} { {$rule} }" : $rule;
+    }
+
+    /**
+     * Sanitize URL for use in CSS to prevent XSS
+     */
+    private function sanitizeCSSUrl(string $url): string
+    {
+        // Escape quotes and backslashes that could break out of CSS context
+        return addcslashes($url, "'\\");
+    }
+
+    /**
+     * Sanitize CSS value to prevent XSS
+     */
+    private function sanitizeCSSValue(string $value): string
+    {
+        // Allow only safe CSS characters: alphanumeric, spaces, hyphens, underscores, percentages, commas, parentheses
+        return preg_replace('/[^a-zA-Z0-9\s\-_%.,()]/i', '', $value) ?? '';
     }
 }

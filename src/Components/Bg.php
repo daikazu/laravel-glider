@@ -38,14 +38,14 @@ class Bg extends Component
     public function generateBackgroundCSS(): string
     {
         $componentId = $this->getComponentId();
-        $url = $this->getBackgroundUrl();
+        $url = $this->sanitizeCSSUrl($this->getBackgroundUrl());
 
         $properties = [
             "background-image: url('{$url}')",
-            "background-position: {$this->getBackgroundPosition()}",
-            "background-size: {$this->size}",
-            "background-repeat: {$this->repeat}",
-            "background-attachment: {$this->attachment}",
+            "background-position: {$this->sanitizeCSSValue($this->getBackgroundPosition())}",
+            "background-size: {$this->sanitizeCSSValue($this->size)}",
+            "background-repeat: {$this->sanitizeCSSValue($this->repeat)}",
+            "background-attachment: {$this->sanitizeCSSValue($this->attachment)}",
         ];
 
         $rule = implode('; ', $properties) . ';';
@@ -196,5 +196,23 @@ class Bg extends Component
             ->mapWithKeys(fn ($item, string $key) => [Str::after($key, 'glide-') => $item]);
 
         return array_merge($glideAttributes->toArray(), $params);
+    }
+
+    /**
+     * Sanitize URL for use in CSS to prevent XSS
+     */
+    private function sanitizeCSSUrl(string $url): string
+    {
+        // Escape quotes and backslashes that could break out of CSS context
+        return addcslashes($url, "'\\");
+    }
+
+    /**
+     * Sanitize CSS value to prevent XSS
+     */
+    private function sanitizeCSSValue(string $value): string
+    {
+        // Allow only safe CSS characters: alphanumeric, spaces, hyphens, underscores, percentages, commas, parentheses
+        return preg_replace('/[^a-zA-Z0-9\s\-_%.,()]/i', '', $value) ?? '';
     }
 }

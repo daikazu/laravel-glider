@@ -109,12 +109,17 @@ return [
     | prevent unauthorized manipulation. This prevents users from creating
     | arbitrary image transformations that could overload your server.
     |
+    | WARNING: NEVER set 'secure' to false in production environments!
+    | Disabling URL signing exposes your application to Denial of Service
+    | attacks through unlimited image generation. Only disable for local
+    | development if absolutely necessary.
+    |
     | Signing Key: The key used to sign URLs. Defaults to your APP_KEY for
     | security. You can set a custom key via GLIDE_SIGN_KEY environment variable.
     |
     */
 
-    'secure'   => env('GLIDE_SECURE', false),
+    'secure'   => env('GLIDE_SECURE', true),
     'sign_key' => env('GLIDE_SIGN_KEY', env('APP_KEY')),
 
     /*

@@ -30,7 +30,16 @@ final class GlideService
     public function decodePath(string $string): string
     {
         $decoded = base64_decode($this->base64UrlToBase64($string), true);
-        return $decoded === false ? '' : $decoded;
+        if ($decoded === false) {
+            return '';
+        }
+
+        // Validate decoded path for security
+        if (! Str::isUrl($decoded)) {
+            $this->validateLocalPath($decoded);
+        }
+
+        return $decoded;
     }
 
     public function getCachePath(string $path, array $params = []): string
@@ -242,6 +251,11 @@ final class GlideService
 
         $path = ltrim($path, '/');
 
+        // Validate local paths for security
+        if (! Str::isUrl($path)) {
+            $this->validateLocalPath($path);
+        }
+
         return rtrim(strtr(base64_encode($path), '+/', '-_'), '=');
     }
 
@@ -290,5 +304,64 @@ final class GlideService
         ];
 
         return $breakpointMap[$breakpoint] ?? 0;
+    }
+
+    /**
+     * Validate local file path to prevent directory traversal attacks
+     *
+     * @throws InvalidArgumentException
+     */
+    private function validateLocalPath(string $path): void
+    {
+        // Check for null bytes - a common attack vector
+        if (str_contains($path, "\0")) {
+            throw new InvalidArgumentException('Invalid path: null byte detected');
+        }
+
+        // Remove any directory traversal sequences
+        $normalized = str_replace(['../', '.\\', '..\\'], '', $path);
+
+        // Additional check: ensure the normalized path doesn't still contain traversal patterns
+        if ($normalized !== $path) {
+            throw new InvalidArgumentException('Invalid path: directory traversal attempt detected');
+        }
+
+        // Validate that resolved path stays within source directory
+        $sourcePath = (string) realpath(config('laravel-glider.source'));
+        if ($sourcePath === '') {
+            throw new InvalidArgumentException('Invalid source configuration: path does not exist');
+        }
+
+        // Construct the full path
+        $fullPath = join_paths($sourcePath, $normalized);
+
+        // Get the real path (resolves symlinks and relative paths)
+        $resolvedPath = realpath($fullPath);
+
+        // If realpath returns false, the file doesn't exist yet (which is OK for generation)
+        // But we still need to validate the parent directory
+        if ($resolvedPath === false) {
+            // Check parent directory instead
+            $parentPath = dirname($fullPath);
+            $resolvedParentPath = realpath($parentPath);
+
+            // If parent also doesn't exist, validate the normalized path structure
+            if ($resolvedParentPath !== false) {
+                if (! str_starts_with($resolvedParentPath, $sourcePath)) {
+                    throw new InvalidArgumentException('Invalid path: outside source directory');
+                }
+            } else {
+                // Parent doesn't exist - just ensure no traversal in the path itself
+                $absolutePath = $sourcePath . DIRECTORY_SEPARATOR . $normalized;
+                if (! str_starts_with($absolutePath, $sourcePath)) {
+                    throw new InvalidArgumentException('Invalid path: outside source directory');
+                }
+            }
+        } else {
+            // File exists - ensure it's within source directory
+            if (! str_starts_with($resolvedPath, $sourcePath)) {
+                throw new InvalidArgumentException('Invalid path: outside source directory');
+            }
+        }
     }
 }
