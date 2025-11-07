@@ -6,6 +6,7 @@ namespace Daikazu\LaravelGlider;
 
 use Daikazu\LaravelGlider\Commands\ClearGlideCacheCommand;
 use Daikazu\LaravelGlider\Commands\ConvertImageTagsToGliderCommand;
+use Daikazu\LaravelGlider\Components\Bg;
 use Daikazu\LaravelGlider\Components\BgResponsive;
 use Daikazu\LaravelGlider\Components\Img;
 use Daikazu\LaravelGlider\Components\ImgResponsive;
@@ -35,7 +36,7 @@ class LaravelGliderServiceProvider extends PackageServiceProvider
             ->name('laravel-glider')
             ->hasConfigFile('laravel-glider')
             ->hasViews('laravel-glider')
-            ->hasViewComponents('glide', Img::class, ImgResponsive::class, BgResponsive::class)
+            ->hasViewComponents('glide', Img::class, ImgResponsive::class, Bg::class, BgResponsive::class)
             ->hasRoute('web')
             ->hasCommands(ClearGlideCacheCommand::class, ConvertImageTagsToGliderCommand::class);
     }
