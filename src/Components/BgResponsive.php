@@ -12,7 +12,7 @@ use InvalidArgumentException;
 
 class BgResponsive extends Component
 {
-    protected string $view = 'laravel-glider::components.responsive-background';
+    protected string $view = 'glider::components.responsive-background';
 
     private ?string $componentId = null;
 

@@ -11,7 +11,7 @@ use function Illuminate\Filesystem\join_paths;
 
 class ImgResponsive extends BaseComponent
 {
-    protected string $view = 'laravel-glider::components.img-responsive';
+    protected string $view = 'glider::components.img-responsive';
 
     private readonly ?array $srcsetWidths;
 

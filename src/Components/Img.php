@@ -6,6 +6,6 @@ namespace Daikazu\LaravelGlider\Components;
 
 class Img extends BaseComponent
 {
-    protected string $view = 'laravel-glider::components.img';
+    protected string $view = 'glider::components.img';
 
 }

@@ -423,7 +423,7 @@ it('handles zero or false filesize gracefully', function () {
 it('uses correct view template', function () {
     $component = createImgResponsive('test.jpg');
     $view = $component->render();
-    expect($view->getName())->toBe('laravel-glider::components.img-responsive');
+    expect($view->getName())->toBe('glider::components.img-responsive');
 });
 
 it('inherits BaseComponent functionality', function () {

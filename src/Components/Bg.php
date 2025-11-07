@@ -10,7 +10,7 @@ use Illuminate\View\Component;
 
 class Bg extends Component
 {
-    protected string $view = 'laravel-glider::components.background';
+    protected string $view = 'glider::components.background';
 
     private ?string $componentId = null;
 
