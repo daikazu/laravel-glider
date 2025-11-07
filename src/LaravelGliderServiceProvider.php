@@ -33,9 +33,9 @@ class LaravelGliderServiceProvider extends PackageServiceProvider
          * More info: https://github.com/spatie/laravel-package-tools
          */
         $package
-            ->name('laravel-glider')
+            ->name('glider')
             ->hasConfigFile('laravel-glider')
-            ->hasViews('laravel-glider')
+            ->hasViews()
             ->hasViewComponents('glide', Img::class, ImgResponsive::class, Bg::class, BgResponsive::class)
             ->hasRoute('web')
             ->hasCommands(ClearGlideCacheCommand::class, ConvertImageTagsToGliderCommand::class);
