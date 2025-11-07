@@ -100,6 +100,38 @@ return [
 
     /*
     |--------------------------------------------------------------------------
+    | Security Settings
+    |--------------------------------------------------------------------------
+    |
+    | Configure security-related options for image processing.
+    |
+    | URL Signing: When enabled, all image URLs must be properly signed to
+    | prevent unauthorized manipulation. This prevents users from creating
+    | arbitrary image transformations that could overload your server.
+    |
+    | Signing Key: The key used to sign URLs. Defaults to your APP_KEY for
+    | security. You can set a custom key via GLIDE_SIGN_KEY environment variable.
+    |
+    */
+
+    'secure'   => env('GLIDE_SECURE', false),
+    'sign_key' => env('GLIDE_SIGN_KEY', env('APP_KEY')),
+
+    /*
+    |--------------------------------------------------------------------------
+    | Advanced Configuration
+    |--------------------------------------------------------------------------
+    |
+    | Additional configuration options for advanced use cases and performance
+    | optimization.
+    |
+    */
+
+    // Group cached images in folders based on their hash for better file organization
+    'group_cache_in_folders' => env('GLIDE_GROUP_CACHE', true),
+
+    /*
+    |--------------------------------------------------------------------------
     | Maximum Image Size
     |--------------------------------------------------------------------------
     |
@@ -315,39 +347,4 @@ return [
             'xs' => ['w' => 40, 'h' => 25, 'fit' => 'crop', 'q' => 10, 'blur' => 10],
         ],
     ],
-
-    /*
-    |--------------------------------------------------------------------------
-    | Security Settings
-    |--------------------------------------------------------------------------
-    |
-    | Configure security-related options for image processing.
-    |
-    | URL Signing: When enabled, all image URLs must be properly signed to
-    | prevent unauthorized manipulation. This prevents users from creating
-    | arbitrary image transformations that could overload your server.
-    |
-    | Signing Key: The key used to sign URLs. Defaults to your APP_KEY for
-    | security. You can set a custom key via GLIDE_SIGN_KEY environment variable.
-    |
-    */
-
-    'secure'   => env('GLIDE_SECURE', false),
-    'sign_key' => env('GLIDE_SIGN_KEY', env('APP_KEY')),
-
-    /*
-    |--------------------------------------------------------------------------
-    | Advanced Configuration
-    |--------------------------------------------------------------------------
-    |
-    | Additional configuration options for advanced use cases and performance
-    | optimization.
-    |
-    */
-
-    // Group cached images in folders based on their hash for better file organization
-    'group_cache_in_folders' => env('GLIDE_GROUP_CACHE', true),
-
-    // Add and Glide custom server configuration here
-
 ];
