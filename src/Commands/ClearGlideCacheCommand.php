@@ -11,7 +11,7 @@ use Throwable;
 
 class ClearGlideCacheCommand extends Command
 {
-    public $signature = 'glide:clear {--force : Force the operation to run when in production}';
+    public $signature = 'glider:clear {--force : Force the operation to run when in production}';
 
     public $description = 'Remove the Glide cached images';
 
