@@ -311,6 +311,125 @@ test('it adds signature when secure is true', function () {
     expect($url)->toContain('?s=');
 });
 
+test('it encodes and decodes paths with accented characters', function () {
+    $service = new GlideService;
+
+    $testPaths = [
+        'café-image.jpg',
+        'ñoño.jpg',
+        'über-foto.jpg',
+        'naïve.jpg',
+        'images/résumé.jpg',
+    ];
+
+    foreach ($testPaths as $originalPath) {
+        // Use reflection to access private method
+        $reflection = new ReflectionClass($service);
+        $encodeMethod = $reflection->getMethod('encodePath');
+        $encodeMethod->setAccessible(true);
+
+        $encoded = $encodeMethod->invoke($service, $originalPath);
+        $decoded = $service->decodePath($encoded);
+
+        expect($decoded)->toBe($originalPath, "Failed for path: {$originalPath}");
+    }
+});
+
+test('it encodes and decodes paths with apostrophes', function () {
+    $service = new GlideService;
+    $originalPath = "l'apostrophe.jpg";
+
+    // Use reflection to access private method
+    $reflection = new ReflectionClass($service);
+    $encodeMethod = $reflection->getMethod('encodePath');
+    $encodeMethod->setAccessible(true);
+
+    $encoded = $encodeMethod->invoke($service, $originalPath);
+    $decoded = $service->decodePath($encoded);
+
+    expect($decoded)->toBe($originalPath);
+});
+
+test('it generates valid URLs for files with accented characters', function () {
+    config(['laravel-glider.secure' => false]);
+
+    $service = new GlideService;
+    $url = $service->getUrl('café-image.jpg', ['w' => 400]);
+
+    expect($url)->toContain('/img/');
+
+    // Extract encoded path from URL and verify it decodes correctly
+    preg_match('#/img/([^/]+)/#', $url, $matches);
+    expect($matches)->toHaveCount(2);
+
+    $decoded = $service->decodePath($matches[1]);
+    expect($decoded)->toBe('café-image.jpg');
+});
+
+test('it generates valid URLs for files with apostrophes', function () {
+    config(['laravel-glider.secure' => false]);
+
+    $service = new GlideService;
+    $url = $service->getUrl("l'apostrophe.jpg", ['w' => 400]);
+
+    expect($url)->toContain('/img/');
+
+    // Extract encoded path from URL and verify it decodes correctly
+    preg_match('#/img/([^/]+)/#', $url, $matches);
+    expect($matches)->toHaveCount(2);
+
+    $decoded = $service->decodePath($matches[1]);
+    expect($decoded)->toBe("l'apostrophe.jpg");
+});
+
+test('it can serve image with accented characters via HTTP', function () {
+    $this->withoutExceptionHandling();
+
+    config(['laravel-glider.source' => __DIR__ . '/fixtures']);
+
+    $service = new GlideService;
+    $url = $service->getUrl('café-image.jpg', ['w' => 100]);
+
+    $response = $this->get($url);
+    $response->assertStatus(200);
+});
+
+test('it can serve image with apostrophe via HTTP', function () {
+    $this->withoutExceptionHandling();
+
+    config(['laravel-glider.source' => __DIR__ . '/fixtures']);
+
+    $service = new GlideService;
+    $url = $service->getUrl("l'apostrophe.jpg", ['w' => 100]);
+
+    $response = $this->get($url);
+    $response->assertStatus(200);
+});
+
+test('it can serve image with ñ character via HTTP', function () {
+    $this->withoutExceptionHandling();
+
+    config(['laravel-glider.source' => __DIR__ . '/fixtures']);
+
+    $service = new GlideService;
+    $url = $service->getUrl('ñoño.jpg', ['w' => 100]);
+
+    $response = $this->get($url);
+    $response->assertStatus(200);
+});
+
+test('it can serve regular ASCII image via HTTP', function () {
+    $this->withoutExceptionHandling();
+
+    config(['laravel-glider.source' => __DIR__ . '/fixtures']);
+
+    $service = new GlideService;
+    $url = $service->getUrl('test-tiny.jpg', ['w' => 100]);
+
+    $response = $this->get($url);
+    $response->assertStatus(200);
+});
+
 test('it removes signature from URL when manually provided in params', function () {
     config(['laravel-glider.secure' => true]);
 
