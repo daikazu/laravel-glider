@@ -105,6 +105,14 @@ final class GlideService
         // The signature is created later and should be ignored even if provided as a parameter
         unset($params['s']);
 
+        // Map 'preset' to 'p' for League/Glide compatibility
+        // Users use glide-preset="name" which becomes ['preset' => 'name']
+        // But League/Glide expects ['p' => 'name'] for preset lookups
+        if (isset($params['preset'])) {
+            $params['p'] = $params['preset'];
+            unset($params['preset']);
+        }
+
         // Sometimes we can directly serve the image from the public disk
         // (Only for local paths, not URLs)
         if ($params === [] && ! Str::isUrl($path)) {

@@ -311,6 +311,125 @@ test('it adds signature when secure is true', function () {
     expect($url)->toContain('?s=');
 });
 
+test('it encodes and decodes paths with accented characters', function () {
+    $service = new GlideService;
+
+    $testPaths = [
+        'café-image.jpg',
+        'ñoño.jpg',
+        'über-foto.jpg',
+        'naïve.jpg',
+        'images/résumé.jpg',
+    ];
+
+    foreach ($testPaths as $originalPath) {
+        // Use reflection to access private method
+        $reflection = new ReflectionClass($service);
+        $encodeMethod = $reflection->getMethod('encodePath');
+        $encodeMethod->setAccessible(true);
+
+        $encoded = $encodeMethod->invoke($service, $originalPath);
+        $decoded = $service->decodePath($encoded);
+
+        expect($decoded)->toBe($originalPath, "Failed for path: {$originalPath}");
+    }
+});
+
+test('it encodes and decodes paths with apostrophes', function () {
+    $service = new GlideService;
+    $originalPath = "l'apostrophe.jpg";
+
+    // Use reflection to access private method
+    $reflection = new ReflectionClass($service);
+    $encodeMethod = $reflection->getMethod('encodePath');
+    $encodeMethod->setAccessible(true);
+
+    $encoded = $encodeMethod->invoke($service, $originalPath);
+    $decoded = $service->decodePath($encoded);
+
+    expect($decoded)->toBe($originalPath);
+});
+
+test('it generates valid URLs for files with accented characters', function () {
+    config(['laravel-glider.secure' => false]);
+
+    $service = new GlideService;
+    $url = $service->getUrl('café-image.jpg', ['w' => 400]);
+
+    expect($url)->toContain('/img/');
+
+    // Extract encoded path from URL and verify it decodes correctly
+    preg_match('#/img/([^/]+)/#', $url, $matches);
+    expect($matches)->toHaveCount(2);
+
+    $decoded = $service->decodePath($matches[1]);
+    expect($decoded)->toBe('café-image.jpg');
+});
+
+test('it generates valid URLs for files with apostrophes', function () {
+    config(['laravel-glider.secure' => false]);
+
+    $service = new GlideService;
+    $url = $service->getUrl("l'apostrophe.jpg", ['w' => 400]);
+
+    expect($url)->toContain('/img/');
+
+    // Extract encoded path from URL and verify it decodes correctly
+    preg_match('#/img/([^/]+)/#', $url, $matches);
+    expect($matches)->toHaveCount(2);
+
+    $decoded = $service->decodePath($matches[1]);
+    expect($decoded)->toBe("l'apostrophe.jpg");
+});
+
+test('it can serve image with accented characters via HTTP', function () {
+    $this->withoutExceptionHandling();
+
+    config(['laravel-glider.source' => __DIR__ . '/fixtures']);
+
+    $service = new GlideService;
+    $url = $service->getUrl('café-image.jpg', ['w' => 100]);
+
+    $response = $this->get($url);
+    $response->assertStatus(200);
+});
+
+test('it can serve image with apostrophe via HTTP', function () {
+    $this->withoutExceptionHandling();
+
+    config(['laravel-glider.source' => __DIR__ . '/fixtures']);
+
+    $service = new GlideService;
+    $url = $service->getUrl("l'apostrophe.jpg", ['w' => 100]);
+
+    $response = $this->get($url);
+    $response->assertStatus(200);
+});
+
+test('it can serve image with ñ character via HTTP', function () {
+    $this->withoutExceptionHandling();
+
+    config(['laravel-glider.source' => __DIR__ . '/fixtures']);
+
+    $service = new GlideService;
+    $url = $service->getUrl('ñoño.jpg', ['w' => 100]);
+
+    $response = $this->get($url);
+    $response->assertStatus(200);
+});
+
+test('it can serve regular ASCII image via HTTP', function () {
+    $this->withoutExceptionHandling();
+
+    config(['laravel-glider.source' => __DIR__ . '/fixtures']);
+
+    $service = new GlideService;
+    $url = $service->getUrl('test-tiny.jpg', ['w' => 100]);
+
+    $response = $this->get($url);
+    $response->assertStatus(200);
+});
+
 test('it removes signature from URL when manually provided in params', function () {
     config(['laravel-glider.secure' => true]);
 
@@ -321,4 +440,77 @@ test('it removes signature from URL when manually provided in params', function 
     // Should contain a signature, but not the manually added one
     expect($url)->toContain('?s=')
         ->and($url)->not->toContain('manually-added');
+});
+
+test('it maps preset parameter to p for League/Glide compatibility', function () {
+    config([
+        'laravel-glider.secure'  => false,
+        'laravel-glider.presets' => [
+            'thumb' => ['w' => 150, 'h' => 150, 'fit' => 'crop', 'q' => 90],
+        ],
+    ]);
+
+    $service = new GlideService;
+    // User passes 'preset' via glide-preset attribute
+    $url = $service->getUrl('test.jpg', ['preset' => 'thumb']);
+
+    // The URL should be generated (preset should be resolved by League/Glide)
+    expect($url)->toContain('/img/');
+
+    // Extract encoded params and verify preset was applied
+    preg_match('#/img/[^/]+/([^.]+)\.#', $url, $matches);
+    expect($matches)->toHaveCount(2);
+
+    $decoded = $service->decodeParams($matches[1]);
+
+    // The preset params should be in the encoded params
+    expect($decoded)->toHaveKey('w')
+        ->and($decoded['w'])->toBe('150')
+        ->and($decoded)->toHaveKey('h')
+        ->and($decoded['h'])->toBe('150')
+        ->and($decoded)->toHaveKey('fit')
+        ->and($decoded['fit'])->toBe('crop');
+});
+
+test('preset parameters can be overridden by explicit params', function () {
+    config([
+        'laravel-glider.secure'  => false,
+        'laravel-glider.presets' => [
+            'thumb' => ['w' => 150, 'h' => 150, 'fit' => 'crop', 'q' => 90],
+        ],
+    ]);
+
+    $service = new GlideService;
+    // User passes preset plus an override
+    $url = $service->getUrl('test.jpg', ['preset' => 'thumb', 'w' => 200]);
+
+    preg_match('#/img/[^/]+/([^.]+)\.#', $url, $matches);
+    expect($matches)->toHaveCount(2);
+
+    $decoded = $service->decodeParams($matches[1]);
+
+    // The explicit w=200 should override preset's w=150
+    expect($decoded['w'])->toBe('200')
+        ->and($decoded['h'])->toBe('150'); // h from preset should remain
+});
+
+test('preset parameter is not included in encoded URL params', function () {
+    config([
+        'laravel-glider.secure'  => false,
+        'laravel-glider.presets' => [
+            'thumb' => ['w' => 150, 'h' => 150],
+        ],
+    ]);
+
+    $service = new GlideService;
+    $url = $service->getUrl('test.jpg', ['preset' => 'thumb']);
+
+    preg_match('#/img/[^/]+/([^.]+)\.#', $url, $matches);
+    expect($matches)->toHaveCount(2);
+
+    $decoded = $service->decodeParams($matches[1]);
+
+    // Neither 'preset' nor 'p' should be in the final encoded params
+    expect($decoded)->not->toHaveKey('preset')
+        ->and($decoded)->not->toHaveKey('p');
 });
