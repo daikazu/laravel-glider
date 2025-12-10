@@ -441,3 +441,76 @@ test('it removes signature from URL when manually provided in params', function 
     expect($url)->toContain('?s=')
         ->and($url)->not->toContain('manually-added');
 });
+
+test('it maps preset parameter to p for League/Glide compatibility', function () {
+    config([
+        'laravel-glider.secure'  => false,
+        'laravel-glider.presets' => [
+            'thumb' => ['w' => 150, 'h' => 150, 'fit' => 'crop', 'q' => 90],
+        ],
+    ]);
+
+    $service = new GlideService;
+    // User passes 'preset' via glide-preset attribute
+    $url = $service->getUrl('test.jpg', ['preset' => 'thumb']);
+
+    // The URL should be generated (preset should be resolved by League/Glide)
+    expect($url)->toContain('/img/');
+
+    // Extract encoded params and verify preset was applied
+    preg_match('#/img/[^/]+/([^.]+)\.#', $url, $matches);
+    expect($matches)->toHaveCount(2);
+
+    $decoded = $service->decodeParams($matches[1]);
+
+    // The preset params should be in the encoded params
+    expect($decoded)->toHaveKey('w')
+        ->and($decoded['w'])->toBe('150')
+        ->and($decoded)->toHaveKey('h')
+        ->and($decoded['h'])->toBe('150')
+        ->and($decoded)->toHaveKey('fit')
+        ->and($decoded['fit'])->toBe('crop');
+});
+
+test('preset parameters can be overridden by explicit params', function () {
+    config([
+        'laravel-glider.secure'  => false,
+        'laravel-glider.presets' => [
+            'thumb' => ['w' => 150, 'h' => 150, 'fit' => 'crop', 'q' => 90],
+        ],
+    ]);
+
+    $service = new GlideService;
+    // User passes preset plus an override
+    $url = $service->getUrl('test.jpg', ['preset' => 'thumb', 'w' => 200]);
+
+    preg_match('#/img/[^/]+/([^.]+)\.#', $url, $matches);
+    expect($matches)->toHaveCount(2);
+
+    $decoded = $service->decodeParams($matches[1]);
+
+    // The explicit w=200 should override preset's w=150
+    expect($decoded['w'])->toBe('200')
+        ->and($decoded['h'])->toBe('150'); // h from preset should remain
+});
+
+test('preset parameter is not included in encoded URL params', function () {
+    config([
+        'laravel-glider.secure'  => false,
+        'laravel-glider.presets' => [
+            'thumb' => ['w' => 150, 'h' => 150],
+        ],
+    ]);
+
+    $service = new GlideService;
+    $url = $service->getUrl('test.jpg', ['preset' => 'thumb']);
+
+    preg_match('#/img/[^/]+/([^.]+)\.#', $url, $matches);
+    expect($matches)->toHaveCount(2);
+
+    $decoded = $service->decodeParams($matches[1]);
+
+    // Neither 'preset' nor 'p' should be in the final encoded params
+    expect($decoded)->not->toHaveKey('preset')
+        ->and($decoded)->not->toHaveKey('p');
+});
