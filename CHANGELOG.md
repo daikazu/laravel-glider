@@ -2,6 +2,15 @@
 
 All notable changes to `laravel-glider` will be documented in this file.
 
+## v3.2.1 - 2025-12-10
+
+### What's Changed
+
+* chore(deps): bump actions/checkout from 5 to 6 by @dependabot[bot] in https://github.com/daikazu/laravel-glider/pull/9
+* Dev by @daikazu in https://github.com/daikazu/laravel-glider/pull/11
+
+**Full Changelog**: https://github.com/daikazu/laravel-glider/compare/v3.2.0...v3.2.1
+
 ## v3.2.0 - Security Hardening & Component Fixes - 2025-11-07
 
 🔒 Security Enhancements
@@ -129,7 +138,6 @@ Features:
 - Better Defaults: WebP format and optimized quality settings by default
 - Environment Variables: More configuration options via .env
 📚 Comprehensive Documentation
-
 - Complete API Reference: Full documentation of all components and methods
 - Usage Examples: Extensive examples for all features
 - Configuration Guide: Detailed configuration documentation
