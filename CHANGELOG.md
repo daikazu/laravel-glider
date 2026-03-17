@@ -2,6 +2,10 @@
 
 All notable changes to `laravel-glider` will be documented in this file.
 
+## v3.3.0 - 2026-03-17
+
+Added Laravel 13 Support
+
 ## v3.2.1 - 2025-12-10
 
 ### What's Changed
@@ -141,7 +145,6 @@ Features:
 - Complete API Reference: Full documentation of all components and methods
 - Usage Examples: Extensive examples for all features
 - Configuration Guide: Detailed configuration documentation
-
 🛠️ Improvements
 
 Performance
