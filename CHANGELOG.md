@@ -2,6 +2,12 @@
 
 All notable changes to `laravel-glider` will be documented in this file.
 
+## v3.3.1 - 2026-03-24
+
+- Add Laravel 13 to CI test matrix
+- Fix PHPStan error in ClearGlideCacheCommand
+- Fix path traversal test failing in CI
+
 ## v3.3.0 - 2026-03-17
 
 Added Laravel 13 Support
@@ -146,7 +152,6 @@ Features:
 - Usage Examples: Extensive examples for all features
 - Configuration Guide: Detailed configuration documentation
 🛠️ Improvements
-
 Performance
 
 - Better caching strategies
