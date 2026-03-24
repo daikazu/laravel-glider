@@ -79,8 +79,7 @@ class ClearGlideCacheCommand extends Command
         $deleted = 0;
         $deletedBytes = 0;
 
-        $this->withProgressBar($files, function ($file) use ($fs, &$deleted, &$deletedBytes): void {
-            /** @var SplFileInfo $file */
+        $this->withProgressBar($files, function (SplFileInfo $file) use ($fs, &$deleted, &$deletedBytes): void {
             $size = $file->getSize();
             try {
                 $fs->delete($file->getPathname());
