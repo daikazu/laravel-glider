@@ -13,6 +13,7 @@ use Daikazu\LaravelGlider\Components\ImgResponsive;
 use Daikazu\LaravelGlider\Facades\Glider;
 use Daikazu\LaravelGlider\Factories\ResponseFactory;
 use Daikazu\LaravelGlider\Security\PathValidator;
+use Daikazu\LaravelGlider\Support\FilesystemResolver;
 use Illuminate\Contracts\Foundation\Application;
 use Illuminate\Routing\UrlGenerator;
 use League\Glide\Server;
@@ -46,8 +47,8 @@ class LaravelGliderServiceProvider extends PackageServiceProvider
     {
         $this->app->singleton(Glider::class, GlideService::class);
 
-        $this->app->bind(PathValidator::class, fn (): PathValidator => new PathValidator(
-            is_string(config('glider.source')) ? config('glider.source') : null
+        $this->app->bind(PathValidator::class, fn (Application $app): PathValidator => new PathValidator(
+            $app->make(FilesystemResolver::class)->localPath(config('glider.source'))
         ));
 
         $this->app->instance(SignatureInterface::class, SignatureFactory::create((string) config('glider.sign_key', '')));
@@ -57,9 +58,17 @@ class LaravelGliderServiceProvider extends PackageServiceProvider
             config('glider.sign_key')
         ));
 
-        $this->app->bind(Server::class, fn (Application $app): Server => ServerFactory::create(
-            array_merge(config('glider'), ['response' => $app->make(ResponseFactory::class)])
-        ));
+        $this->app->bind(Server::class, function (Application $app): Server {
+            $resolver = $app->make(FilesystemResolver::class);
+            $config = config('glider');
+
+            return ServerFactory::create(array_merge($config, [
+                'source'     => $resolver->resolve($config['source']),
+                'cache'      => $resolver->resolve($config['cache']),
+                'watermarks' => $resolver->resolve($config['watermarks']),
+                'response'   => $app->make(ResponseFactory::class),
+            ]));
+        });
 
         $this->ensureCacheDirectoryExists();
     }
@@ -69,6 +78,10 @@ class LaravelGliderServiceProvider extends PackageServiceProvider
      */
     protected function ensureCacheDirectoryExists(): void
     {
+        if (! is_string(config('glider.cache'))) {
+            return;
+        }
+
         $cachePath = (string) config('glider.cache');
 
         if ($cachePath === '') {

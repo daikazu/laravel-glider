@@ -3,6 +3,7 @@
 declare(strict_types=1);
 
 use Daikazu\LaravelGlider\GlideService;
+use League\Flysystem\Filesystem;
 
 describe('SSRF Protection', function () {
     it('blocks localhost by hostname', function () {
@@ -126,7 +127,7 @@ describe('SSRF Protection', function () {
         // Note: example.com resolves to public IPs
         try {
             $filesystem = $service->getSourceFilesystem('http://example.com/image.jpg');
-            expect($filesystem)->toBeInstanceOf(\League\Flysystem\Filesystem::class);
+            expect($filesystem)->toBeInstanceOf(Filesystem::class);
         } catch (InvalidArgumentException $e) {
             // If it throws, it should NOT be about SSRF
             expect($e->getMessage())->not->toContain('localhost');
@@ -140,7 +141,7 @@ describe('SSRF Protection', function () {
 
         try {
             $filesystem = $service->getSourceFilesystem('https://example.com/image.jpg');
-            expect($filesystem)->toBeInstanceOf(\League\Flysystem\Filesystem::class);
+            expect($filesystem)->toBeInstanceOf(Filesystem::class);
         } catch (InvalidArgumentException $e) {
             // If it throws, it should NOT be about SSRF
             expect($e->getMessage())->not->toContain('localhost');
@@ -154,7 +155,7 @@ describe('SSRF Protection', function () {
 
         try {
             $filesystem = $service->getSourceFilesystem('http://example.com:80/image.jpg');
-            expect($filesystem)->toBeInstanceOf(\League\Flysystem\Filesystem::class);
+            expect($filesystem)->toBeInstanceOf(Filesystem::class);
         } catch (InvalidArgumentException $e) {
             expect($e->getMessage())->not->toContain('port');
         }
@@ -165,7 +166,7 @@ describe('SSRF Protection', function () {
 
         try {
             $filesystem = $service->getSourceFilesystem('https://example.com:443/image.jpg');
-            expect($filesystem)->toBeInstanceOf(\League\Flysystem\Filesystem::class);
+            expect($filesystem)->toBeInstanceOf(Filesystem::class);
         } catch (InvalidArgumentException $e) {
             expect($e->getMessage())->not->toContain('port');
         }
@@ -176,7 +177,7 @@ describe('SSRF Protection', function () {
 
         try {
             $filesystem = $service->getSourceFilesystem('http://example.com:8080/image.jpg');
-            expect($filesystem)->toBeInstanceOf(\League\Flysystem\Filesystem::class);
+            expect($filesystem)->toBeInstanceOf(Filesystem::class);
         } catch (InvalidArgumentException $e) {
             expect($e->getMessage())->not->toContain('port');
         }

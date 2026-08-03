@@ -22,7 +22,7 @@ describe('XSS Protection in CSS Sanitization', function () {
         $method = $reflection->getMethod('sanitizeCSSUrl');
         $method->setAccessible(true);
 
-        $result = $method->invoke($component, "test\\backslash.jpg");
+        $result = $method->invoke($component, 'test\\backslash.jpg');
         expect($result)->toContain('\\\\');
     });
 
@@ -141,7 +141,7 @@ describe('XSS Protection in CSS Sanitization', function () {
         $method = $reflection->getMethod('sanitizeCSSValue');
         $method->setAccessible(true);
 
-        $malicious = "center</style><img src=x onerror=alert(1)><style>";
+        $malicious = 'center</style><img src=x onerror=alert(1)><style>';
         $result = $method->invoke($component, $malicious);
 
         // All dangerous characters should be removed

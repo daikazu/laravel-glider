@@ -4,6 +4,7 @@ namespace Daikazu\LaravelGlider\Tests;
 
 use Daikazu\LaravelGlider\LaravelGliderServiceProvider;
 use Illuminate\Database\Eloquent\Factories\Factory;
+use Illuminate\Testing\TestResponse;
 use Orchestra\Testbench\TestCase as Orchestra;
 
 class TestCase extends Orchestra
@@ -14,7 +15,7 @@ class TestCase extends Orchestra
      * This property is defined in Testbench v10+ but not v9.
      * We define it here for backward compatibility with both versions.
      *
-     * @var \Illuminate\Testing\TestResponse|null
+     * @var TestResponse|null
      */
     public static $latestResponse = null;
 

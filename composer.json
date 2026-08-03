@@ -22,6 +22,7 @@
     "require": {
         "php": "^8.3",
         "illuminate/contracts": "^13.0",
+        "league/flysystem-path-prefixing": "^3.0",
         "league/glide": "^4.1",
         "ntzrbtr/flysystem-http": "^2.0",
         "spatie/laravel-package-tools": "^1.92"

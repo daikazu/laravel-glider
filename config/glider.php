@@ -41,6 +41,11 @@ return [
     | - public_path('images')
     | - '/var/www/uploads'
     |
+    | Accepts either form:
+    | - A plain path string, e.g. resource_path('assets')
+    | - A Laravel storage disk reference, e.g. ['disk' => 's3', 'prefix' => 'images']
+    |   ('prefix' is optional and scopes the disk to a subdirectory)
+    |
     */
 
     'source' => env('GLIDER_SOURCE_PATH', resource_path('assets')),
@@ -56,6 +61,11 @@ return [
     | Default: resource_path('assets/watermarks')
     |
     | Usage: <x-glider-img src="image.jpg" glide-mark="logo.png" />
+    |
+    | Accepts either form:
+    | - A plain path string, e.g. resource_path('assets/watermarks')
+    | - A Laravel storage disk reference, e.g. ['disk' => 's3', 'prefix' => 'watermarks']
+    |   ('prefix' is optional and scopes the disk to a subdirectory)
     |
     */
 
@@ -75,6 +85,13 @@ return [
     | Note: This directory will be created automatically if it doesn't exist,
     | and a .gitignore file will be added to prevent committing cached images.
     | You can clear the cache using: php artisan glider:clear
+    |
+    | Accepts either form:
+    | - A plain path string, e.g. storage_path('app/glider-cache')
+    | - A Laravel storage disk reference, e.g. ['disk' => 's3', 'prefix' => 'glider-cache']
+    |   ('prefix' is optional and scopes the disk to a subdirectory; note that the
+    |   directory auto-creation and .gitignore behavior above only apply to the
+    |   plain path form)
     |
     */
 
