@@ -141,6 +141,45 @@ return [
 
     /*
     |--------------------------------------------------------------------------
+    | Three-Layer Security Model
+    |--------------------------------------------------------------------------
+    |
+    | Glider protects your server from abuse and denial-of-service attacks
+    | through three independent, stackable layers:
+    |
+    | 1. URL Signing ('secure' above): every URL must carry a valid HMAC
+    |    signature, so only your application (which knows the sign_key) can
+    |    mint valid image URLs. This is the primary defense and should stay
+    |    enabled in production.
+    |
+    | 2. On-the-Fly Kill Switch ('on_the_fly' below): once you've warmed the
+    |    cache for the conversions you actually use (e.g. during a deploy
+    |    step), you can disable on-the-fly generation entirely. Any request
+    |    for a conversion that isn't already cached returns a 404 instead of
+    |    invoking the image processor. This caps your worst-case processing
+    |    load at zero after the cache is primed.
+    |
+    | 3. Presets-Only Mode ('restrict_to_presets' below): restricts allowed
+    |    manipulations to the named presets configured in 'presets' above
+    |    (plus defaults-only requests). Any request whose parameters don't
+    |    exactly match a configured preset is rejected with a 403, closing
+    |    off the arbitrary-parameter attack surface even when signed URLs
+    |    are otherwise trusted (e.g. user-supplied or third-party URLs).
+    |
+    | These layers compose: you can run signed URLs only, signed + presets-only,
+    | on-the-fly disabled after a cache-warming step, or any combination.
+    |
+    */
+
+    // Disable to serve only pre-cached conversions; new (uncached) requests 404.
+    'on_the_fly' => env('GLIDER_ON_THE_FLY', true),
+
+    // Enable to allow only defaults-only requests or exact preset expansions;
+    // everything else 403s.
+    'restrict_to_presets' => env('GLIDER_RESTRICT_TO_PRESETS', false),
+
+    /*
+    |--------------------------------------------------------------------------
     | Advanced Configuration
     |--------------------------------------------------------------------------
     |

@@ -4,7 +4,9 @@ declare(strict_types=1);
 
 use Daikazu\LaravelGlider\Facades\Glider;
 use Daikazu\LaravelGlider\Http\Controllers\GlideController;
+use Daikazu\LaravelGlider\Security\PresetPolicy;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Http;
 use League\Flysystem\Filesystem;
 use League\Flysystem\Local\LocalFilesystemAdapter;
 use League\Glide\Filesystem\FileNotFoundException;
@@ -13,6 +15,15 @@ use League\Glide\Server;
 use Mockery as m;
 use Symfony\Component\HttpFoundation\Response;
 use Symfony\Component\HttpKernel\Exception\NotFoundHttpException;
+
+beforeEach(function () {
+    config()->set('glider.source', __DIR__ . '/../../fixtures');
+
+    // Cache lives on real disk under vendor/orchestra's testbench storage and
+    // persists across test runs; clear it so on_the_fly/cache-hit tests below
+    // start from a known (empty) cache state.
+    (new Illuminate\Filesystem\Filesystem)->deleteDirectory(storage_path('app/glider-cache'), preserve: true);
+});
 
 function makeGlideStub(string $decodedPath, array $decodedParams, Filesystem $filesystem, ?Closure $onGetCachePath = null): object
 {
@@ -106,7 +117,7 @@ it('returns the server response and sets fm from extension when missing', functi
 
     $request = Request::create('/');
 
-    $response = $controller($request, $server, $encodedPath, $encodedParams, $extension);
+    $response = $controller($request, $server, app(PresetPolicy::class), $encodedPath, $encodedParams, $extension);
 
     expect($response)->toBe($expectedResponse);
 });
@@ -142,7 +153,7 @@ it('does not override fm when provided in params', function () {
 
     $request = Request::create('/');
 
-    $response = $controller($request, $server, $encodedPath, $encodedParams, $extension);
+    $response = $controller($request, $server, app(PresetPolicy::class), $encodedPath, $encodedParams, $extension);
 
     expect($response)->toBe($expectedResponse);
 });
@@ -176,7 +187,7 @@ it('throws NotFoundHttpException when Server throws FileNotFoundException', func
 
     $request = Request::create('/');
 
-    expect(fn () => $controller($request, $server, $encodedPath, $encodedParams, $extension))
+    expect(fn () => $controller($request, $server, app(PresetPolicy::class), $encodedPath, $encodedParams, $extension))
         ->toThrow(NotFoundHttpException::class);
 });
 
@@ -209,6 +220,35 @@ it('throws NotFoundHttpException when Server throws FilesystemException', functi
 
     $request = Request::create('/');
 
-    expect(fn () => $controller($request, $server, $encodedPath, $encodedParams, $extension))
+    expect(fn () => $controller($request, $server, app(PresetPolicy::class), $encodedPath, $encodedParams, $extension))
         ->toThrow(NotFoundHttpException::class);
+});
+
+it('returns 404 on cache miss when on_the_fly is disabled', function () {
+    config()->set('glider.on_the_fly', false);
+    config()->set('glider.secure', false);
+    $url = Glider::url('test-tiny.jpg', ['w' => 10]);
+    $this->get($url)->assertNotFound();
+});
+
+it('serves from cache when on_the_fly is disabled but the conversion is prebuilt', function () {
+    config()->set('glider.secure', false);
+    $url = Glider::url('test-tiny.jpg', ['w' => 10]);
+    $this->get($url)->assertOk();                    // generates + caches
+    config()->set('glider.on_the_fly', false);
+    $this->get($url)->assertOk();                    // served from cache
+});
+
+it('returns 403 for non-preset params when restrict_to_presets is enabled', function () {
+    config()->set(['glider.restrict_to_presets' => true, 'glider.secure' => false]);
+    $url = Glider::url('test-tiny.jpg', ['w' => 123]);
+    $this->get($url)->assertForbidden();
+});
+
+it('returns 404 when a remote source fetch fails', function () {
+    config()->set('glider.secure', false);
+    Http::fake(['example.com/*' => Http::response('', 500)]);
+
+    $url = Glider::url('https://example.com/x.jpg', ['w' => 10]);
+    $this->get($url)->assertNotFound();
 });

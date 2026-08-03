@@ -15,6 +15,10 @@ class VerifyGlideSignature
 {
     public function handle(Request $request, Closure $next): Response
     {
+        if (! config('glider.secure', true)) {
+            return $next($request);
+        }
+
         try {
             App::make(SignatureInterface::class)
                 ->validateRequest($request->path(), $request->toArray());
