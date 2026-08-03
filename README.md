@@ -359,6 +359,11 @@ php artisan glider:build
 ```bash
 # Preview what would be generated without writing anything to cache
 php artisan glider:build --dry-run
+
+# Write to a different cache target than the configured one — used by the
+# hybrid deployment recipe to bake conversions into the release artifact
+# while the runtime cache lives elsewhere (see Deployment Recipes below)
+php artisan glider:build --cache-path=public/img
 ```
 
 Usages with a dynamic `src` (a variable or expression rather than a literal
@@ -382,26 +387,29 @@ Pair this with `'on_the_fly' => false` (see [Security](#security) below) to
 make production serve nothing but pre-warmed cache entries — zero
 request-time image processing.
 
-## Disk-Based Cache
+## Disk-Based Filesystems & Deployment Recipes
 
 `source`, `cache`, and `watermarks` in `config/glider.php` each accept
-either a plain path string (as before) or a Laravel disk reference:
+either a plain path string or a Laravel disk reference:
 
 ```php
 'cache' => ['disk' => 's3', 'prefix' => 'glider-cache'],
 ```
 
-This supports two common deployment recipes:
+Since `.env` can't express arrays (or call path helpers), both forms are
+also available as environment variables:
 
-**1. S3 shared cache** — point `source` and `cache` at S3 disk references.
-Run `php artisan glider:build` once (e.g. in CI, against the shared
-bucket); every application server then reads from the same warm cache
-instead of each one processing images independently.
+```dotenv
+# Path form — relative paths resolve from the application root:
+GLIDER_CACHE_PATH=public/img
 
-```php
-'source' => ['disk' => 's3', 'prefix' => 'images'],
-'cache'  => ['disk' => 's3', 'prefix' => 'glider-cache'],
+# Disk form — takes precedence over the path form when set:
+GLIDER_CACHE_DISK=s3
+GLIDER_CACHE_PREFIX=glider-cache        # optional, defaults to "glider-cache"
 ```
+
+(`GLIDER_SOURCE_DISK`/`GLIDER_SOURCE_PREFIX` and
+`GLIDER_WATERMARKS_DISK`/`GLIDER_WATERMARKS_PREFIX` work the same way.)
 
 > **Note:** a non-local `source` (any disk reference other than the local
 > filesystem) disables automatic `width()`/`height()` attributes and
@@ -409,25 +417,101 @@ instead of each one processing images independently.
 > source image's dimensions from disk. An explicit `srcset-widths` list
 > still works.
 
-**2. Baked into the release artifact** — keep `cache` as a plain local
-path (e.g. `public_path('glider-cache')`), populate it with
-`glider:build` during your build step, and ship it as part of the deployed
-artifact so the cache is present on disk the moment the release goes live.
+### The static-serve property
 
-```php
-'cache' => public_path('glider-cache'),
+Glider's cache layout mirrors its URL structure. If the cache root is
+`public/{base_url}` (default: `public/img`), a cached conversion is a real
+file at exactly the path its URL requests — so **the web server serves it
+as a static file and PHP is never invoked**. Anything *not* in the cache
+falls through to the Laravel route as usual. This one property powers the
+recipes below; no extra configuration is involved.
+
+### Recipe 1: Single server (simplest)
+
+A classic VPS/Forge box. Point the cache at `public/img`, keep on-the-fly
+enabled, and optionally prebuild on deploy:
+
+```dotenv
+GLIDER_CACHE_PATH=public/img
+GLIDER_SECURE=true
 ```
 
-```yaml
-- name: Build assets
-  run: npm run build
-
-- name: Prebuild image cache into the artifact
-  run: php artisan glider:build
-
-- name: Package release
-  run: tar -czf release.tar.gz public/ ...
+```bash
+# deploy script (optional but recommended)
+php artisan glider:build
 ```
+
+Prebuilt conversions are static-served from day one; anything dynamic is
+generated once on first request, lands in `public/img`, and is
+static-served from then on. **Choose this when** you deploy to one or more
+persistent servers with a durable local disk.
+
+### Recipe 2: Shared cloud cache (ephemeral/autoscaling infrastructure)
+
+Laravel Cloud, Vapor, Kubernetes — anywhere instances are ephemeral, local
+writes don't survive, and replicas must share state:
+
+```dotenv
+GLIDER_CACHE_DISK=s3          # e.g. the auto-provisioned bucket on Laravel Cloud
+GLIDER_ON_THE_FLY=true
+GLIDER_SECURE=true
+```
+
+```bash
+# deploy command
+php artisan glider:build
+```
+
+Every instance — including fresh autoscale replicas — shares the same warm
+bucket cache. Dynamic (CMS/database-driven) images are generated once
+globally on first request, and the platform CDN caches everything after the
+first serve (Glider sends `public, max-age=1yr` headers). **Choose this
+when** everything is dynamic or you want the fewest moving parts on cloud
+infrastructure.
+
+### Recipe 3: Hybrid — baked static + shared dynamic (best of both)
+
+For sites where most images are local/static assets but some come from a
+CMS or database. Bake the static conversions **into the deployment
+artifact** at build time with `--cache-path`, while the runtime cache
+points at the shared bucket:
+
+```dotenv
+# runtime environment
+GLIDER_CACHE_DISK=s3
+GLIDER_ON_THE_FLY=true
+GLIDER_SECURE=true
+```
+
+```bash
+# BUILD command (runs while the artifact is created, e.g. Laravel Cloud
+# build step or CI before packaging):
+php artisan glider:build --cache-path=public/img
+```
+
+How the split works — with zero routing configuration:
+
+- **Static images** are baked into `public/img` inside the artifact →
+  served as static assets by the web server/CDN edge. No PHP, no bucket,
+  on every instance, immediately.
+- **Dynamic images** have no baked file, so they fall through to the route
+  → generated once into the shared bucket → CDN-cached after first serve.
+
+The web server itself decides which tier serves each request, simply by
+whether the file exists. **Choose this when** a meaningful share of your
+images are static template assets and you want them served at static-file
+speed even on ephemeral infrastructure.
+
+### Which recipe?
+
+| Your situation | Recipe |
+|---|---|
+| Persistent server(s), durable disk | **1** — local `public/img` cache |
+| Ephemeral/autoscaling, mostly dynamic images | **2** — shared bucket |
+| Ephemeral/autoscaling, mostly static images | **3** — baked + bucket |
+
+All three use the same package configuration surface — they differ only in
+env values and where `glider:build` runs.
 
 ## Requirements
 

@@ -24,12 +24,24 @@ use Throwable;
  */
 class BuildCommand extends Command
 {
-    public $signature = 'glider:build {--dry-run : List conversions without generating them}';
+    public $signature = 'glider:build
+        {--dry-run : List conversions without generating them}
+        {--cache-path= : Write conversions to this path instead of the configured cache (e.g. public/img)}';
 
     public $description = 'Prebuild all statically discoverable Glide conversions found in Blade templates';
 
-    public function handle(TemplateScanner $scanner, ConversionResolver $resolver, Server $server): int
+    public function handle(TemplateScanner $scanner, ConversionResolver $resolver): int
     {
+        $cacheOverride = $this->option('cache-path');
+
+        if (is_string($cacheOverride) && $cacheOverride !== '') {
+            config(['glider.cache' => $cacheOverride]);
+        }
+
+        // Resolved after the override so the server's cache filesystem
+        // reflects it; method injection would resolve too early.
+        $server = app(Server::class);
+
         $paths = (array) config('glider.build.paths', []);
 
         foreach ($paths as $path) {

@@ -174,3 +174,30 @@ it('reports dynamic usages and exits non-zero on failures', function () {
         ->expectsOutputToContain('skipped (dynamic src)')
         ->assertFailed();
 });
+
+it('writes to the --cache-path override instead of the configured cache', function () {
+    // The hybrid deployment recipe: a build command bakes conversions into
+    // public/{base_url} while the runtime cache points elsewhere (e.g. S3).
+    $override = sys_get_temp_dir() . '/glider-build-override';
+    File::deleteDirectory($override);
+
+    $this->artisan('glider:build', ['--cache-path' => $override])->assertSuccessful();
+
+    expect(count(File::allFiles($override)))->toBeGreaterThan(0)
+        ->and(File::exists($this->cacheDir) ? File::allFiles($this->cacheDir) : [])->toBeEmpty();
+
+    File::deleteDirectory($override);
+});
+
+it('produces identical cache entries under --cache-path as a live request would', function () {
+    // The equivalence invariant must hold across the override: bake into a
+    // public dir, then serve the same conversion from a runtime cache rooted
+    // at that same dir — no new file may be created.
+    $this->artisan('glider:build', ['--cache-path' => $this->cacheDir])->assertSuccessful();
+
+    config()->set('glider.secure', false);
+    $filesBefore = count(File::allFiles($this->cacheDir));
+    $this->get(Glider::url('test-tiny.jpg', ['w' => '10']))->assertOk();
+
+    expect(count(File::allFiles($this->cacheDir)))->toBe($filesBefore);
+});
