@@ -2,6 +2,30 @@
 
 All notable changes to `laravel-glider` will be documented in this file.
 
+## Unreleased (v4.0.0)
+
+See [UPGRADE.md](UPGRADE.md) for a full v3 → v4 migration guide.
+
+### ⚠️ Breaking Changes
+
+- **Requirements raised**: now requires PHP ^8.3, Laravel 13 only (`illuminate/contracts` ^13.0; Laravel 11 and 12 are no longer supported), and `league/glide` ^4.1 (pulls in Intervention Image v4).
+- **Config file renamed**: `config/laravel-glider.php` → `config/glider.php`. Every key moved from the `laravel-glider.*` namespace to `glider.*` (e.g. `config('laravel-glider.source')` → `config('glider.source')`). Re-publish with `php artisan vendor:publish --tag="glider-config"` and port over customizations.
+- **Environment variables renamed**: every `GLIDE_*` variable is now `GLIDER_*` (`GLIDE_SECURE` → `GLIDER_SECURE`, `GLIDE_SOURCE_PATH` → `GLIDER_SOURCE_PATH`, `GLIDE_CACHE_PATH` → `GLIDER_CACHE_PATH`, `GLIDE_SIGN_KEY` → `GLIDER_SIGN_KEY`, `GLIDE_BASE_URL` → `GLIDER_BASE_URL`, `GLIDE_WATERMARKS_PATH` → `GLIDER_WATERMARKS_PATH`, `GLIDE_CACHE_WITH_EXTENSIONS` → `GLIDER_CACHE_WITH_EXTENSIONS`, `GLIDE_GROUP_CACHE` → `GLIDER_GROUP_CACHE`, `GLIDE_MAX_IMAGE_SIZE` → `GLIDER_MAX_IMAGE_SIZE`, `GLIDE_IMAGE_MANIPULATION_DRIVER` → `GLIDER_IMAGE_MANIPULATION_DRIVER`, `GLIDE_DEFAULT_FORMAT` → `GLIDER_DEFAULT_FORMAT`, `GLIDE_DEFAULT_QUALITY` → `GLIDER_DEFAULT_QUALITY`).
+- **Blade components renamed**: `<x-glide-img>` → `<x-glider-img>`, `<x-glide-img-responsive>` → `<x-glider-img-responsive>`, `<x-glide-bg>` → `<x-glider-bg>`, `<x-glide-bg-responsive>` → `<x-glider-bg-responsive>`. The `glide-*` attribute prefix used for manipulation params (e.g. `glide-w`) is unchanged.
+- **Facade renamed**: `Daikazu\LaravelGlider\Facades\Glide` → `Daikazu\LaravelGlider\Facades\Glider`.
+- **Route name renamed**: the image-serving route `glide` → `glider`.
+- **`ntzrbtr/flysystem-http` removed** as a dependency. Remote URL sources (`<x-glider-img src="https://...">`) continue to work — v4 ships a first-party, read-only HTTP filesystem adapter built on Laravel's HTTP client. No user action required.
+- Internals dissolved `GlideService`/`BaseComponent` into a composition-based architecture (`Glider` root class plus `Support/*`, `Security/*`, and `Build/*` collaborators). No public API impact beyond the renames above.
+
+### ✨ New Features
+
+- **Disk-based storage**: `source`, `cache`, and `watermarks` in `config/glider.php` now accept a Laravel disk reference (`['disk' => 's3', 'prefix' => 'glider']`) in addition to a plain path string. Supports an S3 shared-cache recipe and a baked-into-artifact recipe.
+- **`glider:build` command**: scans Blade templates (configurable via `glider.build.paths`, default `resources/views`) for statically-resolvable `<x-glider-*>` / `Glider::url()` usages and prebuilds their cache entries so the first live request is already a cache hit. Supports `--dry-run` and reports generated / skipped (dynamic src) / failed counts, exiting non-zero on any failure. Usages with a dynamic `src` stay on-the-fly.
+- **`on_the_fly` security layer** (default: `true`, `GLIDER_ON_THE_FLY`): when disabled, cache misses return 404 instead of processing images on demand — pairs with `glider:build` in CI for zero request-time image processing in production.
+- **`restrict_to_presets` security layer** (default: `false`, `GLIDER_RESTRICT_TO_PRESETS`): when enabled, only defaults-only requests, exact preset expansions, or whitelisted-extension format conversions are allowed; everything else returns 403.
+- **`strip` EXIF parameter** (via League/Glide 4.1): documented in the published config to strip EXIF/metadata (e.g. GPS coordinates) from generated images. Left disabled by default — existing behavior is unchanged unless opted in.
+- Consistent error mapping across the request pipeline: invalid parameters → 400, preset-policy violations → 403, missing/unfetchable images → 404.
+
 ## v3.3.1 - 2026-03-24
 
 - Add Laravel 13 to CI test matrix
