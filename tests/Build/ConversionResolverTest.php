@@ -9,25 +9,42 @@ beforeEach(function () {
     config()->set('glider.source', __DIR__ . '/../fixtures');
 });
 
-it('resolves an img usage to one job with preset mapped', function () {
+it('resolves an img usage to one job with the preset fully expanded', function () {
+    // The job's params must be the *fully resolved* Glide params a live
+    // request would end up with — not just `preset` renamed to `p`. Glide
+    // expands `p` into its constituent params (and discards `p` itself)
+    // while computing the cache path, and merges in `glider.defaults`, so
+    // anything short of that full expansion warms the wrong cache entry.
     $jobs = app(ConversionResolver::class)->jobs(
         new BladeUsage('img', 'hero.jpg', ['glide-w' => '1200', 'glide-preset' => 'thumbnail'], 'a.blade.php')
     );
-    expect($jobs)->toBe([['path' => 'hero.jpg', 'params' => ['w' => '1200', 'p' => 'thumbnail']]]);
+
+    expect($jobs)->toBe([[
+        'path'   => 'hero.jpg',
+        'params' => ['fit' => 'crop', 'fm' => 'webp', 'h' => '150', 'q' => '90', 'w' => '1200'],
+    ]]);
 });
 
-it('resolves a bg usage to one job with glide- prefix stripped', function () {
+it('resolves a bg usage to one job with glide- prefix stripped and defaults merged in', function () {
     $jobs = app(ConversionResolver::class)->jobs(
         new BladeUsage('bg', 'banner.jpg', ['glide-fit' => 'crop'], 'a.blade.php')
     );
-    expect($jobs)->toBe([['path' => 'banner.jpg', 'params' => ['fit' => 'crop']]]);
+
+    expect($jobs)->toBe([[
+        'path'   => 'banner.jpg',
+        'params' => ['fit' => 'crop', 'fm' => 'webp', 'q' => '85'],
+    ]]);
 });
 
-it('resolves a url usage to one job with attributes as-is', function () {
+it('resolves a url usage to one job with attributes as-is plus defaults merged in', function () {
     $jobs = app(ConversionResolver::class)->jobs(
         new BladeUsage('url', 'inline.jpg', ['w' => '400', 'fm' => 'webp'], 'a.blade.php')
     );
-    expect($jobs)->toBe([['path' => 'inline.jpg', 'params' => ['w' => '400', 'fm' => 'webp']]]);
+
+    expect($jobs)->toBe([[
+        'path'   => 'inline.jpg',
+        'params' => ['fm' => 'webp', 'q' => '85', 'w' => '400'],
+    ]]);
 });
 
 it('resolves img-responsive to one job per srcset width plus the base image', function () {
@@ -38,6 +55,31 @@ it('resolves img-responsive to one job per srcset width plus the base image', fu
     expect($widths->all())->toBe(['400', '800'])->and($jobs)->toHaveCount(3);
 });
 
+it('resolves img-responsive with a preset to jobs with the preset fully expanded', function () {
+    // Regression test for the bug found in review: imgResponsiveJobs()
+    // never mapped `preset` to `p`, so a `glide-preset` attribute survived
+    // as a raw, meaningless `preset` key and its params were silently
+    // dropped rather than applied.
+    config()->set('glider.presets.thumbnail', ['w' => 150, 'h' => 150, 'fit' => 'crop', 'q' => 90]);
+
+    $jobs = app(ConversionResolver::class)->jobs(
+        new BladeUsage('img-responsive', 'test-tiny.jpg', ['glide-preset' => 'thumbnail', 'srcset-widths' => '10'], 'a.blade.php')
+    );
+
+    expect($jobs)->toBe([
+        [
+            'path' => 'test-tiny.jpg',
+            // Explicit srcset `w`/`q`/`fm` override the preset's values.
+            'params' => ['fit' => 'crop', 'fm' => 'webp', 'h' => '150', 'q' => '85', 'w' => '10'],
+        ],
+        [
+            'path' => 'test-tiny.jpg',
+            // The plain `src()` job has nothing to override the preset with.
+            'params' => ['fit' => 'crop', 'fm' => 'webp', 'h' => '150', 'q' => '90', 'w' => '150'],
+        ],
+    ]);
+});
+
 it('resolves bg-responsive presets to one job per breakpoint', function () {
     config()->set('glider.background_presets.hero', [
         'xs' => ['w' => 768, 'h' => 400, 'fit' => 'crop'],
@@ -46,4 +88,20 @@ it('resolves bg-responsive presets to one job per breakpoint', function () {
     expect(app(ConversionResolver::class)->jobs(
         new BladeUsage('bg-responsive', 'banner.jpg', ['preset' => 'hero'], 'a.blade.php')
     ))->toHaveCount(2);
+});
+
+it('resolves a usage whose src would be served directly (no manipulation) to no jobs', function () {
+    // When params are empty and the source path is directly servable
+    // (public disk / storage passthrough), `Glider::url()` returns a plain
+    // asset URL rather than a Glide route URL. There is nothing to
+    // prebuild in that case since a live request never hits the Glide
+    // route either.
+    config()->set('glider.source', storage_path('app/public'));
+    config()->set('filesystems.disks.public.root', storage_path('app/public'));
+
+    $jobs = app(ConversionResolver::class)->jobs(
+        new BladeUsage('img', 'plain.jpg', [], 'a.blade.php')
+    );
+
+    expect($jobs)->toBe([]);
 });

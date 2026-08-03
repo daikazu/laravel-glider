@@ -4,23 +4,32 @@ declare(strict_types=1);
 
 namespace Daikazu\LaravelGlider\Build;
 
+use Daikazu\LaravelGlider\Glider;
 use Daikazu\LaravelGlider\Support\BackgroundBreakpoints;
 use Daikazu\LaravelGlider\Support\GlideAttributes;
-use Daikazu\LaravelGlider\Support\ParamResolver;
 use Daikazu\LaravelGlider\Support\SrcsetCalculator;
 use Illuminate\Support\Str;
 
 /**
  * Resolves a single statically-discovered {@see BladeUsage} into the list
- * of Glide conversion jobs it implies, mirroring exactly the params each
- * component/facade usage would produce at request time. This is the
- * linchpin of the build-time/request-time equivalence invariant: any
- * divergence here means `glider:build` would warm the wrong cache entry.
+ * of Glide conversion jobs it implies.
+ *
+ * This is the linchpin of the build-time/request-time equivalence
+ * invariant: any divergence here means `glider:build` would warm the wrong
+ * cache entry. Rather than re-deriving final Glide params in parallel to
+ * the request-time code path (preset expansion, default merging, and the
+ * `fm`/extension redundancy handling in `ParamResolver` all have subtle,
+ * easy-to-miss quirks — see git history for two that shipped), each
+ * candidate is round-tripped through the *exact* runtime URL-generation
+ * and decode pipeline: build the real URL via `Glider::url()`, then decode
+ * it back exactly as `GlideController` would. This makes the params
+ * byte-identical to what a live request for the same conversion would
+ * produce, by construction, for any current or future param quirk.
  */
 final class ConversionResolver
 {
     public function __construct(
-        private readonly ParamResolver $paramResolver,
+        private readonly Glider $glider,
         private readonly SrcsetCalculator $srcsetCalculator,
         private readonly BackgroundBreakpoints $backgroundBreakpoints,
     ) {}
@@ -30,63 +39,109 @@ final class ConversionResolver
      */
     public function jobs(BladeUsage $usage): array
     {
-        return match ($usage->component) {
-            'img', 'bg'      => $this->staticJobs($usage),
-            'url'            => [['path' => $usage->src, 'params' => $usage->attributes]],
-            'img-responsive' => $this->imgResponsiveJobs($usage),
-            'bg-responsive'  => $this->bgResponsiveJobs($usage),
+        $candidates = match ($usage->component) {
+            'img', 'bg'      => [$this->glideAttributes($usage->attributes)],
+            'url'            => [$usage->attributes],
+            'img-responsive' => $this->imgResponsiveCandidates($usage),
+            'bg-responsive'  => $this->bgResponsiveCandidates($usage),
             default          => [],
         };
-    }
-
-    /**
-     * @return list<array{path: string, params: array}>
-     */
-    private function staticJobs(BladeUsage $usage): array
-    {
-        $params = $this->paramResolver->mapPresetAlias($this->glideAttributes($usage->attributes));
-
-        return [['path' => $usage->src, 'params' => $params]];
-    }
-
-    /**
-     * @return list<array{path: string, params: array}>
-     */
-    private function imgResponsiveJobs(BladeUsage $usage): array
-    {
-        $base = $this->glideAttributes($usage->attributes);
-        $custom = $this->parseSrcsetWidths($usage->attributes['srcset-widths'] ?? null);
-        $widths = $this->srcsetCalculator->widths($usage->src, $custom);
 
         $jobs = [];
 
-        if ($widths !== null) {
-            foreach ($widths as $width) {
-                $jobs[] = [
-                    'path'   => $usage->src,
-                    'params' => array_merge($base, ['q' => 85, 'fm' => 'webp', 'w' => (string) $width]),
-                ];
+        foreach ($candidates as $inputParams) {
+            $params = $this->canonicalize($usage->src, $inputParams);
+
+            if ($params !== null) {
+                $jobs[] = ['path' => $usage->src, 'params' => $params];
             }
         }
-
-        // Plus the plain `src()` conversion (mirrors ImgResponsive::src()).
-        $jobs[] = ['path' => $usage->src, 'params' => $base];
 
         return $jobs;
     }
 
     /**
-     * @return list<array{path: string, params: array}>
+     * The candidate input params for each `ImgResponsive` conversion: one
+     * per srcset width (mirrors `ImgResponsive::srcset()`), plus one for
+     * the plain `src()` conversion (mirrors `ImgResponsive::src()`).
+     *
+     * @return list<array<string, mixed>>
      */
-    private function bgResponsiveJobs(BladeUsage $usage): array
+    private function imgResponsiveCandidates(BladeUsage $usage): array
+    {
+        $base = $this->glideAttributes($usage->attributes);
+        $custom = $this->parseSrcsetWidths($usage->attributes['srcset-widths'] ?? null);
+        $widths = $this->srcsetCalculator->widths($usage->src, $custom);
+
+        $candidates = [];
+
+        if ($widths !== null) {
+            foreach ($widths as $width) {
+                $candidates[] = array_merge($base, ['q' => 85, 'fm' => 'webp', 'w' => $width]);
+            }
+        }
+
+        $candidates[] = $base;
+
+        return $candidates;
+    }
+
+    /**
+     * The candidate input params for each `BgResponsive` breakpoint
+     * (mirrors `BgResponsive::breakpointsWithUrls()`).
+     *
+     * @return list<array<string, mixed>>
+     */
+    private function bgResponsiveCandidates(BladeUsage $usage): array
     {
         $base = $this->glideAttributes($usage->attributes);
         $preset = $usage->attributes['preset'] ?? null;
 
         return $this->backgroundBreakpoints
             ->expand($preset, null, $base)
-            ->map(fn (array $breakpoint): array => ['path' => $usage->src, 'params' => $breakpoint['params']])
+            ->pluck('params')
             ->all();
+    }
+
+    /**
+     * Round-trips $inputParams through the real URL-generation and
+     * decoding pipeline: build the URL exactly as a component would
+     * (`Glider::url()` — which maps preset -> p, expands presets/defaults,
+     * and resolves the redundant-fm/extension quirk), then decode the
+     * resulting URL's encoded params and extension and apply
+     * `$params['fm'] ??= $extension` exactly as `GlideController` does.
+     *
+     * Returns null when the usage wouldn't hit the Glide route at all
+     * (e.g. a direct-serve passthrough for an unmanipulated local image),
+     * since there is then nothing to prebuild.
+     *
+     * @param  array<string, mixed>  $inputParams
+     * @return array<string, mixed>|null
+     */
+    private function canonicalize(string $path, array $inputParams): ?array
+    {
+        $url = $this->glider->url($path, $inputParams);
+        $urlPath = (string) parse_url($url, PHP_URL_PATH);
+        $routePrefix = '/' . trim((string) config('glider.base_url'), '/') . '/';
+
+        if (! str_contains($urlPath, $routePrefix)) {
+            return null;
+        }
+
+        $filename = basename($urlPath);
+        $dotPosition = strrpos($filename, '.');
+
+        if ($dotPosition === false) {
+            return null;
+        }
+
+        $encodedParams = substr($filename, 0, $dotPosition);
+        $extension = substr($filename, $dotPosition + 1);
+
+        $params = $this->glider->decodeParams($encodedParams);
+        $params['fm'] ??= $extension;
+
+        return $params;
     }
 
     /**
