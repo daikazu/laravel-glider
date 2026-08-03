@@ -3,9 +3,11 @@
 declare(strict_types=1);
 
 use Daikazu\LaravelGlider\Support\HttpFilesystemAdapter;
+use Illuminate\Http\Client\ConnectionException;
 use Illuminate\Http\Client\Factory;
 use Illuminate\Support\Facades\Http;
 use League\Flysystem\Config;
+use League\Flysystem\UnableToCheckFileExistence;
 use League\Flysystem\UnableToCopyFile;
 use League\Flysystem\UnableToCreateDirectory;
 use League\Flysystem\UnableToDeleteDirectory;
@@ -127,3 +129,33 @@ it('mutating methods report the read-only message', function () {
         expect($e->getMessage())->toBe('HTTP source is read-only');
     }
 });
+
+it('converts a connection failure on read() into UnableToReadFile', function () {
+    Http::fake(fn () => throw new ConnectionException('Connection refused'));
+
+    adapter()->read('a.jpg');
+})->throws(UnableToReadFile::class);
+
+it('converts a connection failure on fileSize() into UnableToRetrieveMetadata', function () {
+    Http::fake(fn () => throw new ConnectionException('Connection refused'));
+
+    adapter()->fileSize('a.jpg');
+})->throws(UnableToRetrieveMetadata::class);
+
+it('converts a connection failure on mimeType() into UnableToRetrieveMetadata', function () {
+    Http::fake(fn () => throw new ConnectionException('Connection refused'));
+
+    adapter()->mimeType('a.jpg');
+})->throws(UnableToRetrieveMetadata::class);
+
+it('converts a connection failure on lastModified() into UnableToRetrieveMetadata', function () {
+    Http::fake(fn () => throw new ConnectionException('Connection refused'));
+
+    adapter()->lastModified('a.jpg');
+})->throws(UnableToRetrieveMetadata::class);
+
+it('converts a connection failure on fileExists() into UnableToCheckFileExistence', function () {
+    Http::fake(fn () => throw new ConnectionException('Connection refused'));
+
+    adapter()->fileExists('a.jpg');
+})->throws(UnableToCheckFileExistence::class);

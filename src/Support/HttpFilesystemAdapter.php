@@ -4,12 +4,15 @@ declare(strict_types=1);
 
 namespace Daikazu\LaravelGlider\Support;
 
+use Illuminate\Http\Client\ConnectionException;
 use Illuminate\Http\Client\Factory;
+use Illuminate\Http\Client\RequestException;
 use Illuminate\Http\Client\Response;
 use League\Flysystem\Config;
 use League\Flysystem\FileAttributes;
 use League\Flysystem\FilesystemAdapter;
 use League\Flysystem\StorageAttributes;
+use League\Flysystem\UnableToCheckFileExistence;
 use League\Flysystem\UnableToCopyFile;
 use League\Flysystem\UnableToCreateDirectory;
 use League\Flysystem\UnableToDeleteDirectory;
@@ -39,10 +42,14 @@ final class HttpFilesystemAdapter implements FilesystemAdapter
 
     public function fileExists(string $path): bool
     {
-        $response = $this->http->head($this->url($path));
+        try {
+            $response = $this->http->head($this->url($path));
 
-        if ($response->status() === 405) {
-            $response = $this->http->get($this->url($path));
+            if ($response->status() === 405) {
+                $response = $this->http->get($this->url($path));
+            }
+        } catch (ConnectionException | RequestException $e) {
+            throw UnableToCheckFileExistence::forLocation($path, $e);
         }
 
         return $response->successful();
@@ -68,7 +75,11 @@ final class HttpFilesystemAdapter implements FilesystemAdapter
 
     public function read(string $path): string
     {
-        $response = $this->http->get($this->url($path));
+        try {
+            $response = $this->http->get($this->url($path));
+        } catch (ConnectionException | RequestException $e) {
+            throw UnableToReadFile::fromLocation($path, $e->getMessage(), $e);
+        }
 
         if (! $response->successful()) {
             throw UnableToReadFile::fromLocation($path, "HTTP status {$response->status()}");
@@ -186,7 +197,11 @@ final class HttpFilesystemAdapter implements FilesystemAdapter
 
     private function head(string $path, string $metadataType): Response
     {
-        $response = $this->http->head($this->url($path));
+        try {
+            $response = $this->http->head($this->url($path));
+        } catch (ConnectionException | RequestException $e) {
+            throw UnableToRetrieveMetadata::create($path, $metadataType, $e->getMessage(), $e);
+        }
 
         if (! $response->successful()) {
             throw UnableToRetrieveMetadata::create($path, $metadataType, "HTTP status {$response->status()}");
