@@ -122,9 +122,8 @@ final class ConversionResolver
     {
         $url = $this->glider->url($path, $inputParams);
         $urlPath = (string) parse_url($url, PHP_URL_PATH);
-        $routePrefix = '/' . trim((string) config('glider.base_url'), '/') . '/';
 
-        if (! str_contains($urlPath, $routePrefix)) {
+        if (! str_starts_with($urlPath, $this->routePrefix())) {
             return null;
         }
 
@@ -142,6 +141,31 @@ final class ConversionResolver
         $params['fm'] ??= $extension;
 
         return $params;
+    }
+
+    /**
+     * The static path prefix of the actual `glider` route (e.g. `/img/`),
+     * derived from the route itself rather than reconstructed from
+     * `glider.base_url` config. A naive substring/config-based check (e.g.
+     * `str_contains($urlPath, '/img/')`) false-positives whenever a
+     * direct-serve URL merely *contains* that segment somewhere in its
+     * path — e.g. a source image literally named `img/plain.jpg` served
+     * from `storage/img/plain.jpg` — so the check must be anchored to the
+     * start of the path and derived from the real route.
+     */
+    private function routePrefix(): string
+    {
+        $suffix = 'probe/probe.jpg';
+
+        $probePath = (string) parse_url(route('glider', [
+            'encoded_path'   => 'probe',
+            'encoded_params' => 'probe',
+            'extension'      => 'jpg',
+        ], false), PHP_URL_PATH);
+
+        return str_ends_with($probePath, $suffix)
+            ? substr($probePath, 0, -strlen($suffix))
+            : $probePath;
     }
 
     /**

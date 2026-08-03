@@ -42,9 +42,22 @@ class BuildCommand extends Command
 
         /** @var array<string, array{path: string, params: array}> $jobsByCachePath */
         $jobsByCachePath = [];
+        $resolveFailures = [];
 
         foreach ($result['usages'] as $usage) {
-            foreach ($resolver->jobs($usage) as $job) {
+            try {
+                $usageJobs = $resolver->jobs($usage);
+            } catch (Throwable $e) {
+                $resolveFailures[] = [
+                    'path'   => $usage->src,
+                    'params' => $usage->attributes,
+                    'reason' => $e->getMessage(),
+                ];
+
+                continue;
+            }
+
+            foreach ($usageJobs as $job) {
                 $cachePath = Glider::getCachePath($job['path'], $job['params']);
                 $jobsByCachePath[$cachePath] = $job;
             }
@@ -53,11 +66,11 @@ class BuildCommand extends Command
         $jobs = array_values($jobsByCachePath);
 
         if ($this->option('dry-run')) {
-            return $this->reportDryRun($jobs, $result['dynamic']);
+            return $this->reportDryRun($jobs, $result['dynamic'], $resolveFailures);
         }
 
         $generated = 0;
-        $failures = [];
+        $failures = $resolveFailures;
 
         foreach ($jobs as $job) {
             try {
@@ -82,8 +95,9 @@ class BuildCommand extends Command
     /**
      * @param  list<array{path: string, params: array}>  $jobs
      * @param  list<array{file: string, tag: string}>  $dynamic
+     * @param  list<array{path: string, params: array, reason: string}>  $resolveFailures
      */
-    private function reportDryRun(array $jobs, array $dynamic): int
+    private function reportDryRun(array $jobs, array $dynamic, array $resolveFailures): int
     {
         $this->info(sprintf('%d conversion(s) would be generated:', count($jobs)));
 
@@ -92,6 +106,14 @@ class BuildCommand extends Command
         }
 
         $this->reportDynamic($dynamic);
+
+        if ($resolveFailures !== []) {
+            $this->line('failed to resolve: ' . count($resolveFailures));
+
+            foreach ($resolveFailures as $failure) {
+                $this->error(" - {$failure['path']}: {$failure['reason']}");
+            }
+        }
 
         return self::SUCCESS;
     }

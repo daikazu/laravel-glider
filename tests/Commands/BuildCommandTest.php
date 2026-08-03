@@ -104,9 +104,50 @@ it('prebuilds exactly the cache entries a live request would use for a preset on
     expect(count(File::allFiles($this->cacheDir)))->toBe($filesBefore);
 });
 
+it('creates no cache file for a src that merely contains the base_url segment but is directly servable', function () {
+    // Regression coverage: the old Glide-route detection was a naive
+    // `str_contains($urlPath, '/img/')` substring scan. `base_url`
+    // defaults to "img", and "img/..." is a common asset layout, so a
+    // direct-serve URL like ".../storage/img/plain.jpg" contains "/img/"
+    // as a substring even though it never touches the Glide route. Using a
+    // fixture whose src path literally starts with "img/" reproduces the
+    // exact false positive the reviewer found.
+    File::deleteDirectory(__DIR__ . '/../fixtures/build-views');
+    File::ensureDirectoryExists(__DIR__ . '/../fixtures/build-views');
+    File::put(
+        __DIR__ . '/../fixtures/build-views/direct-serve.blade.php',
+        '<x-glider-img src="img/plain.jpg" />'
+    );
+
+    config()->set('glider.source', storage_path('app/public'));
+    config()->set('filesystems.disks.public.root', storage_path('app/public'));
+
+    $this->artisan('glider:build')->assertSuccessful();
+
+    expect(File::exists($this->cacheDir) ? File::allFiles($this->cacheDir) : [])->toBeEmpty();
+});
+
 it('lists jobs without generating on --dry-run', function () {
     $this->artisan('glider:build', ['--dry-run' => true])->assertSuccessful();
     expect(File::exists($this->cacheDir) ? File::allFiles($this->cacheDir) : [])->toBeEmpty();
+});
+
+it('collects a resolver exception as a failed item instead of aborting the whole command', function () {
+    // Important-severity fix: ConversionResolver::jobs() can throw (e.g.
+    // BackgroundBreakpoints::expand() on an unknown preset name), and that
+    // call was previously outside any try/catch in BuildCommand, so one
+    // bad usage would abort the entire run instead of being reported as a
+    // per-item failure like a generation failure is.
+    File::put(
+        __DIR__ . '/../fixtures/build-views/bad-preset.blade.php',
+        '<x-glider-bg-responsive src="banner.jpg" preset="does-not-exist" />'
+    );
+
+    $this->artisan('glider:build')->assertFailed();
+
+    // The other, valid usage from the shared `page.blade.php` fixture must
+    // still have been generated despite the other usage's resolver error.
+    expect(count(File::allFiles($this->cacheDir)))->toBeGreaterThan(0);
 });
 
 it('reports dynamic usages and exits non-zero on failures', function () {

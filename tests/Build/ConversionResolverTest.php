@@ -90,6 +90,24 @@ it('resolves bg-responsive presets to one job per breakpoint', function () {
     ))->toHaveCount(2);
 });
 
+it('resolves a usage whose src path happens to contain the base_url segment to no jobs when directly servable', function () {
+    // Regression test for the bug found in review: the old Glide-route
+    // detection was a naive `str_contains($urlPath, '/img/')` substring
+    // scan. `base_url` defaults to "img", and "img/..." is a common asset
+    // layout, so a direct-serve URL like ".../storage/img/plain.jpg"
+    // contains "/img/" as a substring even though it never touches the
+    // Glide route at all. The check must be anchored to the *start* of
+    // the path and derived from the real route, not a substring match.
+    config()->set('glider.source', storage_path('app/public'));
+    config()->set('filesystems.disks.public.root', storage_path('app/public'));
+
+    $jobs = app(ConversionResolver::class)->jobs(
+        new BladeUsage('img', 'img/plain.jpg', [], 'a.blade.php')
+    );
+
+    expect($jobs)->toBe([]);
+});
+
 it('resolves a usage whose src would be served directly (no manipulation) to no jobs', function () {
     // When params are empty and the source path is directly servable
     // (public disk / storage passthrough), `Glider::url()` returns a plain
