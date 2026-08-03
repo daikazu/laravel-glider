@@ -5,16 +5,14 @@ declare(strict_types=1);
 namespace Daikazu\LaravelGlider;
 
 use Daikazu\LaravelGlider\Security\PathValidator;
-use Daikazu\LaravelGlider\Security\UrlValidator;
 use Daikazu\LaravelGlider\Support\ParamResolver;
 use Daikazu\LaravelGlider\Support\PathCodec;
+use Daikazu\LaravelGlider\Support\SourceResolver;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Str;
 use InvalidArgumentException;
-use League\Flysystem\Filesystem;
-use League\Flysystem\Local\LocalFilesystemAdapter;
+use League\Flysystem\FilesystemOperator;
 use League\Glide\Signatures\SignatureInterface;
-use Netzarbeiter\FlysystemHttp\HttpAdapterPsr;
 
 use function Illuminate\Filesystem\join_paths;
 
@@ -48,30 +46,9 @@ final class GlideService
         return ltrim(Str::after($fullRoute, '/' . config('glider.base_url')), '/');
     }
 
-    public function getSourceFilesystem(string $path): Filesystem
+    public function getSourceFilesystem(string $path): FilesystemOperator
     {
-        $adapter = new LocalFilesystemAdapter(config('glider.source'));
-
-        // Check if path contains a scheme (URL-like)
-        if (Str::isUrl($path) || str_contains($path, '://')) {
-            // Validate URL to prevent SSRF attacks
-            app(UrlValidator::class)->validate($path);
-
-            // Extract base URL for HTTP filesystem
-            $parsedUrl = parse_url($path);
-            if ($parsedUrl === false || ! isset($parsedUrl['scheme'], $parsedUrl['host'])) {
-                throw new InvalidArgumentException("Invalid URL provided: {$path}");
-            }
-
-            $baseUrl = $parsedUrl['scheme'] . '://' . $parsedUrl['host'];
-            if (isset($parsedUrl['port'])) {
-                $baseUrl .= ':' . $parsedUrl['port'];
-            }
-
-            $adapter = HttpAdapterPsr::fromUrl($baseUrl);
-        }
-
-        return new Filesystem($adapter);
+        return app(SourceResolver::class)->filesystemFor($path);
     }
 
     /**
@@ -81,21 +58,7 @@ final class GlideService
      */
     public function getImagePath(string $path): string
     {
-        if (Str::isUrl($path)) {
-            $parsedUrl = parse_url($path);
-            if ($parsedUrl === false) {
-                return $path;
-            }
-
-            $imagePath = $parsedUrl['path'] ?? '/';
-            if (isset($parsedUrl['query'])) {
-                $imagePath .= '?' . $parsedUrl['query'];
-            }
-
-            return ltrim($imagePath, '/');
-        }
-
-        return $path;
+        return app(SourceResolver::class)->imagePath($path);
     }
 
     public function getUrl(string $path, array $params = []): string

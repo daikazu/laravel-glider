@@ -6,7 +6,7 @@ namespace Daikazu\LaravelGlider\Facades;
 
 use Daikazu\LaravelGlider\GlideService;
 use Illuminate\Support\Facades\Facade;
-use League\Flysystem\Filesystem;
+use League\Flysystem\FilesystemOperator;
 
 /**
  * @see GlideService
@@ -14,7 +14,7 @@ use League\Flysystem\Filesystem;
  * @method static string decodePath(string $string)
  * @method static array decodeParams(string $string)
  * @method static string getCachePath(string $path, array $params = [])
- * @method static Filesystem getSourceFilesystem(string $path)
+ * @method static FilesystemOperator getSourceFilesystem(string $path)
  * @method static string getImagePath(string $path)
  * @method static string getUrl(string $path, array $params = [])
  * @method static string url(string $path, array $params = [])
