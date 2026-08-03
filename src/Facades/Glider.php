@@ -4,12 +4,11 @@ declare(strict_types=1);
 
 namespace Daikazu\LaravelGlider\Facades;
 
-use Daikazu\LaravelGlider\GlideService;
 use Illuminate\Support\Facades\Facade;
 use League\Flysystem\FilesystemOperator;
 
 /**
- * @see GlideService
+ * @see \Daikazu\LaravelGlider\Glider
  *
  * @method static string decodePath(string $string)
  * @method static array decodeParams(string $string)
@@ -26,6 +25,6 @@ class Glider extends Facade
 {
     protected static function getFacadeAccessor(): string
     {
-        return GlideService::class;
+        return \Daikazu\LaravelGlider\Glider::class;
     }
 }

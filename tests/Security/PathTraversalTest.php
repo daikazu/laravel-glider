@@ -2,46 +2,46 @@
 
 declare(strict_types=1);
 
-use Daikazu\LaravelGlider\GlideService;
+use Daikazu\LaravelGlider\Glider;
 
 describe('Path Traversal Security', function () {
     it('blocks directory traversal with forward slash sequences', function () {
-        $service = new GlideService;
+        $service = app(Glider::class);
 
         expect(fn () => $service->getUrl('../../etc/passwd'))
             ->toThrow(InvalidArgumentException::class, 'directory traversal');
     });
 
     it('blocks directory traversal with backslash sequences', function () {
-        $service = new GlideService;
+        $service = app(Glider::class);
 
         expect(fn () => $service->getUrl('images\..\..\config\database.php'))
             ->toThrow(InvalidArgumentException::class, 'directory traversal');
     });
 
     it('blocks directory traversal with mixed sequences', function () {
-        $service = new GlideService;
+        $service = app(Glider::class);
 
         expect(fn () => $service->getUrl('images/../../../etc/passwd'))
             ->toThrow(InvalidArgumentException::class, 'directory traversal');
     });
 
     it('blocks null byte injection', function () {
-        $service = new GlideService;
+        $service = app(Glider::class);
 
         expect(fn () => $service->getUrl("test.jpg\0"))
             ->toThrow(InvalidArgumentException::class, 'null byte');
     });
 
     it('blocks null byte with path traversal', function () {
-        $service = new GlideService;
+        $service = app(Glider::class);
 
         expect(fn () => $service->getUrl("../../../etc/passwd\0.jpg"))
             ->toThrow(InvalidArgumentException::class);
     });
 
     it('allows valid image paths', function () {
-        $service = new GlideService;
+        $service = app(Glider::class);
 
         // These should not throw exceptions
         $url = $service->getUrl('images/test.jpg');
@@ -52,21 +52,21 @@ describe('Path Traversal Security', function () {
     });
 
     it('allows paths with hyphens and underscores', function () {
-        $service = new GlideService;
+        $service = app(Glider::class);
 
         $url = $service->getUrl('images/test-image_01.jpg');
         expect($url)->toBeString();
     });
 
     it('allows nested folder paths', function () {
-        $service = new GlideService;
+        $service = app(Glider::class);
 
         $url = $service->getUrl('uploads/2024/01/image.jpg');
         expect($url)->toBeString();
     });
 
     it('blocks path that goes outside source directory', function () {
-        $service = new GlideService;
+        $service = app(Glider::class);
 
         // Try to access a file outside the source directory
         expect(fn () => $service->getUrl('../outside.jpg'))
@@ -74,7 +74,7 @@ describe('Path Traversal Security', function () {
     });
 
     it('handles URL paths without validation', function () {
-        $service = new GlideService;
+        $service = app(Glider::class);
 
         // URL paths should not be validated for traversal (they're remote)
         $url = $service->getUrl('https://example.com/image.jpg');
@@ -82,7 +82,7 @@ describe('Path Traversal Security', function () {
     });
 
     it('decodes and validates paths safely', function () {
-        $service = new GlideService;
+        $service = app(Glider::class);
 
         // Try to encode a malicious path and then decode it
         try {
@@ -95,7 +95,7 @@ describe('Path Traversal Security', function () {
     });
 
     it('prevents symlink attacks', function () {
-        $service = new GlideService;
+        $service = app(Glider::class);
 
         // This test assumes symlinks would be resolved by realpath()
         // and blocked if they point outside the source directory
@@ -112,7 +112,7 @@ describe('Path Traversal Security', function () {
     });
 
     it('validates paths after decoding from base64', function () {
-        $service = new GlideService;
+        $service = app(Glider::class);
 
         // Create a malicious path
         $maliciousPath = '../../etc/passwd';
@@ -130,7 +130,7 @@ describe('Path Traversal Security', function () {
             mkdir($sourcePath, 0755, true);
         }
 
-        $service = new GlideService;
+        $service = app(Glider::class);
 
         $validPath = 'images/test.jpg';
         $encoded = rtrim(strtr(base64_encode($validPath), '+/', '-_'), '=');

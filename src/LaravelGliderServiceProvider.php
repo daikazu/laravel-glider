@@ -10,7 +10,6 @@ use Daikazu\LaravelGlider\Components\Bg;
 use Daikazu\LaravelGlider\Components\BgResponsive;
 use Daikazu\LaravelGlider\Components\Img;
 use Daikazu\LaravelGlider\Components\ImgResponsive;
-use Daikazu\LaravelGlider\Facades\Glider;
 use Daikazu\LaravelGlider\Factories\ResponseFactory;
 use Daikazu\LaravelGlider\Security\PathValidator;
 use Daikazu\LaravelGlider\Support\FilesystemResolver;
@@ -45,7 +44,7 @@ class LaravelGliderServiceProvider extends PackageServiceProvider
 
     public function packageBooted(): void
     {
-        $this->app->singleton(Glider::class, GlideService::class);
+        $this->app->singleton(Glider::class);
 
         $this->app->bind(PathValidator::class, fn (Application $app): PathValidator => new PathValidator(
             $app->make(FilesystemResolver::class)->localPath(config('glider.source'))

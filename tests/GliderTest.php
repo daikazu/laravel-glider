@@ -2,7 +2,8 @@
 
 declare(strict_types=1);
 
-use Daikazu\LaravelGlider\GlideService;
+use Daikazu\LaravelGlider\Glider;
+use Daikazu\LaravelGlider\Support\UrlGenerator;
 use League\Flysystem\Filesystem;
 
 beforeEach(function () {
@@ -21,7 +22,7 @@ beforeEach(function () {
 });
 
 test('it decodes params correctly', function () {
-    $service = new GlideService;
+    $service = app(Glider::class);
     $params = ['w' => 400, 'h' => 300, 'q' => 85];
 
     // Encode params
@@ -35,13 +36,13 @@ test('it decodes params correctly', function () {
 });
 
 test('it returns empty array for invalid params', function () {
-    $service = new GlideService;
+    $service = app(Glider::class);
 
     expect($service->decodeParams('invalid-base64'))->toBe([]);
 });
 
 test('it decodes path correctly', function () {
-    $service = new GlideService;
+    $service = app(Glider::class);
     $path = 'images/photo.jpg';
 
     // Encode path
@@ -54,41 +55,41 @@ test('it decodes path correctly', function () {
 });
 
 test('it returns empty string for invalid path', function () {
-    $service = new GlideService;
+    $service = app(Glider::class);
 
     expect($service->decodePath('!!!invalid!!!'))->toBe('');
 });
 
 test('it gets local filesystem for local paths', function () {
-    $service = new GlideService;
+    $service = app(Glider::class);
     $filesystem = $service->getSourceFilesystem('local/image.jpg');
 
     expect($filesystem)->toBeInstanceOf(Filesystem::class);
 });
 
 test('it gets HTTP filesystem for URLs', function () {
-    $service = new GlideService;
+    $service = app(Glider::class);
     $filesystem = $service->getSourceFilesystem('https://example.com/image.jpg');
 
     expect($filesystem)->toBeInstanceOf(Filesystem::class);
 });
 
 test('it handles URLs with ports', function () {
-    $service = new GlideService;
+    $service = app(Glider::class);
     $filesystem = $service->getSourceFilesystem('https://example.com:8080/image.jpg');
 
     expect($filesystem)->toBeInstanceOf(Filesystem::class);
 });
 
 test('it handles URLs with base paths', function () {
-    $service = new GlideService;
+    $service = app(Glider::class);
     $filesystem = $service->getSourceFilesystem('https://cdn.example.com/images/photo.jpg');
 
     expect($filesystem)->toBeInstanceOf(Filesystem::class);
 });
 
 test('it processes remote URLs even with no explicit params', function () {
-    $service = new GlideService;
+    $service = app(Glider::class);
     $url = 'https://example.com/image.jpg';
 
     // With config defaults, remote URLs should be processed, not returned directly
@@ -98,14 +99,14 @@ test('it processes remote URLs even with no explicit params', function () {
 });
 
 test('it removes signature param from params', function () {
-    $service = new GlideService;
+    $service = app(Glider::class);
     $url = $service->getUrl('image.jpg', ['w' => 400, 's' => 'should-be-removed']);
 
     expect($url)->not->toContain('should-be-removed');
 });
 
 test('url() is an alias for getUrl()', function () {
-    $service = new GlideService;
+    $service = app(Glider::class);
     $path = 'image.jpg';
     $params = ['w' => 400, 'h' => 300, 'q' => 85];
 
@@ -113,7 +114,7 @@ test('url() is an alias for getUrl()', function () {
 });
 
 test('it generates responsive background URLs', function () {
-    $service = new GlideService;
+    $service = app(Glider::class);
     $breakpoints = [
         'xs' => ['w' => 480],
         'lg' => ['w' => 1024],
@@ -129,7 +130,7 @@ test('it generates responsive background URLs', function () {
 });
 
 test('it merges base params with breakpoint params', function () {
-    $service = new GlideService;
+    $service = app(Glider::class);
     $breakpoints = ['xs' => ['w' => 480]];
     $baseParams = ['q' => 90, 'fm' => 'webp'];
 
@@ -139,7 +140,7 @@ test('it merges base params with breakpoint params', function () {
 });
 
 test('it gets background preset from config', function () {
-    $service = new GlideService;
+    $service = app(Glider::class);
     $preset = $service->getBackgroundPreset('hero');
 
     expect($preset)->toBe([
@@ -149,12 +150,12 @@ test('it gets background preset from config', function () {
 });
 
 test('it throws exception for non-existent preset', function () {
-    $service = new GlideService;
+    $service = app(Glider::class);
     $service->getBackgroundPreset('non-existent');
 })->throws(InvalidArgumentException::class, "Background preset 'non-existent' not found");
 
 test('it generates background CSS correctly', function () {
-    $service = new GlideService;
+    $service = app(Glider::class);
     $breakpoints = [
         'xs' => ['w' => 480],
         'md' => ['w' => 768],
@@ -171,7 +172,7 @@ test('it generates background CSS correctly', function () {
 });
 
 test('it applies custom CSS options', function () {
-    $service = new GlideService;
+    $service = app(Glider::class);
     $breakpoints = ['xs' => ['w' => 480]];
     $options = [
         'position'   => 'top left',
@@ -190,7 +191,7 @@ test('it applies custom CSS options', function () {
 });
 
 test('it converts breakpoint names to pixel widths', function () {
-    $service = new GlideService;
+    $service = app(Glider::class);
     $breakpoints = [
         'xs'  => ['w' => 100],
         'sm'  => ['w' => 100],
@@ -211,7 +212,7 @@ test('it converts breakpoint names to pixel widths', function () {
 });
 
 test('it handles numeric breakpoints', function () {
-    $service = new GlideService;
+    $service = app(Glider::class);
     $breakpoints = [
         320  => ['w' => 100],
         768  => ['w' => 100],
@@ -226,45 +227,48 @@ test('it handles numeric breakpoints', function () {
 });
 
 test('it encodes and decodes paths symmetrically', function () {
-    $service = new GlideService;
+    $service = app(Glider::class);
+    $urlGenerator = app(UrlGenerator::class);
     $originalPath = 'images/subfolder/photo.jpg';
 
     // Use reflection to access private method
-    $reflection = new ReflectionClass($service);
+    $reflection = new ReflectionClass($urlGenerator);
     $encodeMethod = $reflection->getMethod('encodePath');
     $encodeMethod->setAccessible(true);
 
-    $encoded = $encodeMethod->invoke($service, $originalPath);
+    $encoded = $encodeMethod->invoke($urlGenerator, $originalPath);
     $decoded = $service->decodePath($encoded);
 
     expect($decoded)->toBe($originalPath);
 });
 
 test('it removes query parameters from path when encoding', function () {
-    $service = new GlideService;
+    $service = app(Glider::class);
+    $urlGenerator = app(UrlGenerator::class);
     $pathWithQuery = 'images/photo.jpg?version=123';
 
     // Use reflection to access private method
-    $reflection = new ReflectionClass($service);
+    $reflection = new ReflectionClass($urlGenerator);
     $encodeMethod = $reflection->getMethod('encodePath');
     $encodeMethod->setAccessible(true);
 
-    $encoded = $encodeMethod->invoke($service, $pathWithQuery);
+    $encoded = $encodeMethod->invoke($urlGenerator, $pathWithQuery);
     $decoded = $service->decodePath($encoded);
 
     expect($decoded)->toBe('images/photo.jpg');
 });
 
 test('it encodes and decodes params symmetrically', function () {
-    $service = new GlideService;
+    $service = app(Glider::class);
+    $urlGenerator = app(UrlGenerator::class);
     $originalParams = ['w' => 400, 'h' => 300, 'fit' => 'crop', 'q' => 85];
 
     // Use reflection to access private method
-    $reflection = new ReflectionClass($service);
+    $reflection = new ReflectionClass($urlGenerator);
     $encodeMethod = $reflection->getMethod('encodeParams');
     $encodeMethod->setAccessible(true);
 
-    $encoded = $encodeMethod->invoke($service, $originalParams);
+    $encoded = $encodeMethod->invoke($urlGenerator, $originalParams);
     $decoded = $service->decodeParams($encoded);
 
     // encodeParams merges with server defaults, so we need to expect those defaults
@@ -277,15 +281,16 @@ test('it encodes and decodes params symmetrically', function () {
 });
 
 test('it removes signature and p params when encoding', function () {
-    $service = new GlideService;
+    $service = app(Glider::class);
+    $urlGenerator = app(UrlGenerator::class);
     $params = ['w' => 400, 's' => 'signature', 'p' => 'preset'];
 
     // Use reflection to access private method
-    $reflection = new ReflectionClass($service);
+    $reflection = new ReflectionClass($urlGenerator);
     $encodeMethod = $reflection->getMethod('encodeParams');
     $encodeMethod->setAccessible(true);
 
-    $encoded = $encodeMethod->invoke($service, $params);
+    $encoded = $encodeMethod->invoke($urlGenerator, $params);
     $decoded = $service->decodeParams($encoded);
 
     expect($decoded)->not->toHaveKey('s')
@@ -296,7 +301,7 @@ test('it removes signature and p params when encoding', function () {
 test('it does not add signature when secure is false', function () {
     config(['glider.secure' => false]);
 
-    $service = new GlideService;
+    $service = app(Glider::class);
     $url = $service->getUrl('test.jpg', ['w' => 400]);
 
     expect($url)->not->toContain('?s=')
@@ -306,14 +311,15 @@ test('it does not add signature when secure is false', function () {
 test('it adds signature when secure is true', function () {
     config(['glider.secure' => true]);
 
-    $service = new GlideService;
+    $service = app(Glider::class);
     $url = $service->getUrl('test.jpg', ['w' => 400]);
 
     expect($url)->toContain('?s=');
 });
 
 test('it encodes and decodes paths with accented characters', function () {
-    $service = new GlideService;
+    $service = app(Glider::class);
+    $urlGenerator = app(UrlGenerator::class);
 
     $testPaths = [
         'café-image.jpg',
@@ -325,11 +331,11 @@ test('it encodes and decodes paths with accented characters', function () {
 
     foreach ($testPaths as $originalPath) {
         // Use reflection to access private method
-        $reflection = new ReflectionClass($service);
+        $reflection = new ReflectionClass($urlGenerator);
         $encodeMethod = $reflection->getMethod('encodePath');
         $encodeMethod->setAccessible(true);
 
-        $encoded = $encodeMethod->invoke($service, $originalPath);
+        $encoded = $encodeMethod->invoke($urlGenerator, $originalPath);
         $decoded = $service->decodePath($encoded);
 
         expect($decoded)->toBe($originalPath, "Failed for path: {$originalPath}");
@@ -337,15 +343,16 @@ test('it encodes and decodes paths with accented characters', function () {
 });
 
 test('it encodes and decodes paths with apostrophes', function () {
-    $service = new GlideService;
+    $service = app(Glider::class);
+    $urlGenerator = app(UrlGenerator::class);
     $originalPath = "l'apostrophe.jpg";
 
     // Use reflection to access private method
-    $reflection = new ReflectionClass($service);
+    $reflection = new ReflectionClass($urlGenerator);
     $encodeMethod = $reflection->getMethod('encodePath');
     $encodeMethod->setAccessible(true);
 
-    $encoded = $encodeMethod->invoke($service, $originalPath);
+    $encoded = $encodeMethod->invoke($urlGenerator, $originalPath);
     $decoded = $service->decodePath($encoded);
 
     expect($decoded)->toBe($originalPath);
@@ -354,7 +361,7 @@ test('it encodes and decodes paths with apostrophes', function () {
 test('it generates valid URLs for files with accented characters', function () {
     config(['glider.secure' => false]);
 
-    $service = new GlideService;
+    $service = app(Glider::class);
     $url = $service->getUrl('café-image.jpg', ['w' => 400]);
 
     expect($url)->toContain('/img/');
@@ -370,7 +377,7 @@ test('it generates valid URLs for files with accented characters', function () {
 test('it generates valid URLs for files with apostrophes', function () {
     config(['glider.secure' => false]);
 
-    $service = new GlideService;
+    $service = app(Glider::class);
     $url = $service->getUrl("l'apostrophe.jpg", ['w' => 400]);
 
     expect($url)->toContain('/img/');
@@ -388,7 +395,7 @@ test('it can serve image with accented characters via HTTP', function () {
 
     config(['glider.source' => __DIR__ . '/fixtures']);
 
-    $service = new GlideService;
+    $service = app(Glider::class);
     $url = $service->getUrl('café-image.jpg', ['w' => 100]);
 
     $response = $this->get($url);
@@ -400,7 +407,7 @@ test('it can serve image with apostrophe via HTTP', function () {
 
     config(['glider.source' => __DIR__ . '/fixtures']);
 
-    $service = new GlideService;
+    $service = app(Glider::class);
     $url = $service->getUrl("l'apostrophe.jpg", ['w' => 100]);
 
     $response = $this->get($url);
@@ -412,7 +419,7 @@ test('it can serve image with ñ character via HTTP', function () {
 
     config(['glider.source' => __DIR__ . '/fixtures']);
 
-    $service = new GlideService;
+    $service = app(Glider::class);
     $url = $service->getUrl('ñoño.jpg', ['w' => 100]);
 
     $response = $this->get($url);
@@ -424,7 +431,7 @@ test('it can serve regular ASCII image via HTTP', function () {
 
     config(['glider.source' => __DIR__ . '/fixtures']);
 
-    $service = new GlideService;
+    $service = app(Glider::class);
     $url = $service->getUrl('test-tiny.jpg', ['w' => 100]);
 
     $response = $this->get($url);
@@ -434,7 +441,7 @@ test('it can serve regular ASCII image via HTTP', function () {
 test('it removes signature from URL when manually provided in params', function () {
     config(['glider.secure' => true]);
 
-    $service = new GlideService;
+    $service = app(Glider::class);
     // Even if 's' is provided in params, it should be removed and regenerated
     $url = $service->getUrl('test.jpg', ['w' => 400, 's' => 'manually-added']);
 
@@ -451,7 +458,7 @@ test('it maps preset parameter to p for League/Glide compatibility', function ()
         ],
     ]);
 
-    $service = new GlideService;
+    $service = app(Glider::class);
     // User passes 'preset' via glide-preset attribute
     $url = $service->getUrl('test.jpg', ['preset' => 'thumb']);
 
@@ -481,7 +488,7 @@ test('preset parameters can be overridden by explicit params', function () {
         ],
     ]);
 
-    $service = new GlideService;
+    $service = app(Glider::class);
     // User passes preset plus an override
     $url = $service->getUrl('test.jpg', ['preset' => 'thumb', 'w' => 200]);
 
@@ -503,7 +510,7 @@ test('preset parameter is not included in encoded URL params', function () {
         ],
     ]);
 
-    $service = new GlideService;
+    $service = app(Glider::class);
     $url = $service->getUrl('test.jpg', ['preset' => 'thumb']);
 
     preg_match('#/img/[^/]+/([^.]+)\.#', $url, $matches);
