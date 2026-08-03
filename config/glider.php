@@ -62,7 +62,9 @@ return [
     |
     */
 
-    'source' => env('GLIDER_SOURCE_PATH', resource_path('assets')),
+    'source' => env('GLIDER_SOURCE_DISK')
+        ? ['disk' => env('GLIDER_SOURCE_DISK'), 'prefix' => env('GLIDER_SOURCE_PREFIX', '')]
+        : env('GLIDER_SOURCE_PATH', resource_path('assets')),
 
     /*
     |--------------------------------------------------------------------------
@@ -87,7 +89,9 @@ return [
     |
     */
 
-    'watermarks' => env('GLIDER_WATERMARKS_PATH', resource_path('assets/watermarks')),
+    'watermarks' => env('GLIDER_WATERMARKS_DISK')
+        ? ['disk' => env('GLIDER_WATERMARKS_DISK'), 'prefix' => env('GLIDER_WATERMARKS_PREFIX', '')]
+        : env('GLIDER_WATERMARKS_PATH', resource_path('assets/watermarks')),
 
     /*
     |--------------------------------------------------------------------------
@@ -126,7 +130,9 @@ return [
     |
     */
 
-    'cache' => env('GLIDER_CACHE_PATH', storage_path('app/glider-cache')),
+    'cache' => env('GLIDER_CACHE_DISK')
+        ? ['disk' => env('GLIDER_CACHE_DISK'), 'prefix' => env('GLIDER_CACHE_PREFIX', 'glider-cache')]
+        : env('GLIDER_CACHE_PATH', storage_path('app/glider-cache')),
 
     /*
     |--------------------------------------------------------------------------
