@@ -4,12 +4,13 @@ declare(strict_types=1);
 
 namespace Daikazu\LaravelGlider;
 
+use Daikazu\LaravelGlider\Support\ParamResolver;
+use Daikazu\LaravelGlider\Support\PathCodec;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Str;
 use InvalidArgumentException;
 use League\Flysystem\Filesystem;
 use League\Flysystem\Local\LocalFilesystemAdapter;
-use League\Glide\Server;
 use League\Glide\Signatures\SignatureInterface;
 use Netzarbeiter\FlysystemHttp\HttpAdapterPsr;
 
@@ -19,18 +20,13 @@ final class GlideService
 {
     public function decodeParams(string $string): array
     {
-        $decoded = base64_decode($this->base64UrlToBase64($string), true);
-        if ($decoded === false) {
-            return [];
-        }
-        $data = json_decode($decoded, true);
-        return is_array($data) ? $data : [];
+        return app(PathCodec::class)->decodeParams($string);
     }
 
     public function decodePath(string $string): string
     {
-        $decoded = base64_decode($this->base64UrlToBase64($string), true);
-        if ($decoded === false) {
+        $decoded = app(PathCodec::class)->decode($string);
+        if ($decoded === null) {
             return '';
         }
 
@@ -108,10 +104,7 @@ final class GlideService
         // Map 'preset' to 'p' for League/Glide compatibility
         // Users use glide-preset="name" which becomes ['preset' => 'name']
         // But League/Glide expects ['p' => 'name'] for preset lookups
-        if (isset($params['preset'])) {
-            $params['p'] = $params['preset'];
-            unset($params['preset']);
-        }
+        $params = app(ParamResolver::class)->mapPresetAlias($params);
 
         // Sometimes we can directly serve the image from the public disk
         // (Only for local paths, not URLs)
@@ -227,27 +220,12 @@ final class GlideService
 
     private function getRouteParams(string $path, array $parameters = []): array
     {
-        $pathForExt = (string) parse_url($path, PHP_URL_PATH);
-        $ext = strtolower(in_array(pathinfo($pathForExt, PATHINFO_EXTENSION), ['', '0'], true) ? '' : pathinfo($pathForExt, PATHINFO_EXTENSION));
-
-        // Merge with server defaults/presets so fm from presets/defaults is considered
-        $resolvedParams = $parameters;
-        if (app()->bound(Server::class)) {
-            $resolvedParams = app(Server::class)->getAllParams($parameters);
-        }
-
-        $format = $resolvedParams['fm'] ?? ($ext !== '' ? $ext : null);
-        $extension = $format === 'pjpg' ? 'jpg' : ($format ?? 'jpg');
-
-        // If fm is redundant (same as chosen extension), avoid including it explicitly in the URL params
-        if (array_key_exists('fm', $parameters) && ($parameters['fm'] === $extension || $parameters['fm'] === 'pjpg' && $extension === 'jpg')) {
-            unset($parameters['fm']);
-        }
+        $resolved = app(ParamResolver::class)->routeParams($path, $parameters);
 
         return [
             'encoded_path'   => $this->encodePath($path),
-            'encoded_params' => $this->encodeParams($parameters),
-            'extension'      => $extension,
+            'encoded_params' => $this->encodeParams($resolved['params']),
+            'extension'      => $resolved['extension'],
         ];
     }
 
@@ -269,31 +247,14 @@ final class GlideService
             $this->validateLocalPath($path);
         }
 
-        return rtrim(strtr(base64_encode($path), '+/', '-_'), '=');
+        return app(PathCodec::class)->encode($path);
     }
 
     private function encodeParams(array $params): string
     {
-        if (app()->bound(Server::class)) {
-            $params = app(Server::class)->getAllParams($params);
-        }
+        $normalized = app(ParamResolver::class)->normalize($params);
 
-        unset($params['s'], $params['p']);
-        $params = array_map('strval', $params);
-        ksort($params);
-
-        $json = json_encode($params, JSON_UNESCAPED_SLASHES);
-        return rtrim(strtr(base64_encode($json ?: '{}'), '+/', '-_'), '=');
-    }
-
-    private function base64UrlToBase64(string $input): string
-    {
-        $b64 = strtr($input, '-_', '+/');
-        $pad = strlen($b64) % 4;
-        if ($pad !== 0) {
-            $b64 .= str_repeat('=', 4 - $pad);
-        }
-        return $b64;
+        return app(PathCodec::class)->encodeParams($normalized);
     }
 
     /**
