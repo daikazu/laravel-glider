@@ -12,6 +12,7 @@ use Daikazu\LaravelGlider\Components\Img;
 use Daikazu\LaravelGlider\Components\ImgResponsive;
 use Daikazu\LaravelGlider\Facades\Glider;
 use Daikazu\LaravelGlider\Factories\ResponseFactory;
+use Daikazu\LaravelGlider\Security\PathValidator;
 use Illuminate\Contracts\Foundation\Application;
 use Illuminate\Routing\UrlGenerator;
 use League\Glide\Server;
@@ -44,6 +45,10 @@ class LaravelGliderServiceProvider extends PackageServiceProvider
     public function packageBooted(): void
     {
         $this->app->singleton(Glider::class, GlideService::class);
+
+        $this->app->bind(PathValidator::class, fn (): PathValidator => new PathValidator(
+            is_string(config('glider.source')) ? config('glider.source') : null
+        ));
 
         $this->app->instance(SignatureInterface::class, SignatureFactory::create((string) config('glider.sign_key', '')));
 
