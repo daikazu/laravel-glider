@@ -4,7 +4,7 @@ declare(strict_types=1);
 
 namespace Daikazu\LaravelGlider\Components;
 
-use Daikazu\LaravelGlider\Facades\Glide;
+use Daikazu\LaravelGlider\Facades\Glider;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Str;
 use Illuminate\View\Component;
@@ -28,7 +28,7 @@ class BaseComponent extends Component
 
     public function src(): string
     {
-        return Glide::getUrl($this->src, $this->glideAttributes()->toArray());
+        return Glider::getUrl($this->src, $this->glideAttributes()->toArray());
     }
 
     /**
@@ -129,7 +129,7 @@ class BaseComponent extends Component
             return $this->dimensions;
         }
 
-        $imagePath = join_paths(config('laravel-glider.source'), $this->src);
+        $imagePath = join_paths(config('glider.source'), $this->src);
         if (! is_file($imagePath)) {
             return $this->dimensions = null;
         }

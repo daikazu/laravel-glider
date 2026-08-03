@@ -24,7 +24,7 @@ return [
     |
     */
 
-    'base_url' => env('GLIDE_BASE_URL', 'img'),
+    'base_url' => env('GLIDER_BASE_URL', 'img'),
 
     /*
     |--------------------------------------------------------------------------
@@ -43,7 +43,7 @@ return [
     |
     */
 
-    'source' => env('GLIDE_SOURCE_PATH', resource_path('assets')),
+    'source' => env('GLIDER_SOURCE_PATH', resource_path('assets')),
 
     /*
     |--------------------------------------------------------------------------
@@ -55,11 +55,11 @@ return [
     |
     | Default: resource_path('assets/watermarks')
     |
-    | Usage: <x-glide-img src="image.jpg" glide-mark="logo.png" />
+    | Usage: <x-glider-img src="image.jpg" glide-mark="logo.png" />
     |
     */
 
-    'watermarks' => env('GLIDE_WATERMARKS_PATH', resource_path('assets/watermarks')),
+    'watermarks' => env('GLIDER_WATERMARKS_PATH', resource_path('assets/watermarks')),
 
     /*
     |--------------------------------------------------------------------------
@@ -74,11 +74,11 @@ return [
     |
     | Note: This directory will be created automatically if it doesn't exist,
     | and a .gitignore file will be added to prevent committing cached images.
-    | You can clear the cache using: php artisan glide:clear-cache
+    | You can clear the cache using: php artisan glider:clear
     |
     */
 
-    'cache' => env('GLIDE_CACHE_PATH', storage_path('app/glider-cache')),
+    'cache' => env('GLIDER_CACHE_PATH', storage_path('app/glider-cache')),
 
     /*
     |--------------------------------------------------------------------------
@@ -96,7 +96,7 @@ return [
     |
     */
 
-    'cache_with_file_extensions' => env('GLIDE_CACHE_WITH_EXTENSIONS', false),
+    'cache_with_file_extensions' => env('GLIDER_CACHE_WITH_EXTENSIONS', false),
 
     /*
     |--------------------------------------------------------------------------
@@ -115,12 +115,12 @@ return [
     | development if absolutely necessary.
     |
     | Signing Key: The key used to sign URLs. Defaults to your APP_KEY for
-    | security. You can set a custom key via GLIDE_SIGN_KEY environment variable.
+    | security. You can set a custom key via GLIDER_SIGN_KEY environment variable.
     |
     */
 
-    'secure'   => env('GLIDE_SECURE', true),
-    'sign_key' => env('GLIDE_SIGN_KEY', env('APP_KEY')),
+    'secure'   => env('GLIDER_SECURE', true),
+    'sign_key' => env('GLIDER_SIGN_KEY', env('APP_KEY')),
 
     /*
     |--------------------------------------------------------------------------
@@ -133,7 +133,7 @@ return [
     */
 
     // Group cached images in folders based on their hash for better file organization
-    'group_cache_in_folders' => env('GLIDE_GROUP_CACHE', true),
+    'group_cache_in_folders' => env('GLIDER_GROUP_CACHE', true),
 
     /*
     |--------------------------------------------------------------------------
@@ -153,7 +153,7 @@ return [
     |
     */
 
-    'max_image_size' => env('GLIDE_MAX_IMAGE_SIZE', 2000 * 2000),
+    'max_image_size' => env('GLIDER_MAX_IMAGE_SIZE', 2000 * 2000),
 
     /*
     |--------------------------------------------------------------------------
@@ -174,7 +174,7 @@ return [
     |
     */
 
-    'driver' => env('GLIDE_IMAGE_MANIPULATION_DRIVER', 'gd'),
+    'driver' => env('GLIDER_IMAGE_MANIPULATION_DRIVER', 'gd'),
 
     /*
     |--------------------------------------------------------------------------
@@ -193,8 +193,8 @@ return [
     */
 
     'defaults' => [
-        'fm' => env('GLIDE_DEFAULT_FORMAT', 'webp'),
-        'q'  => env('GLIDE_DEFAULT_QUALITY', 85),
+        'fm' => env('GLIDER_DEFAULT_FORMAT', 'webp'),
+        'q'  => env('GLIDER_DEFAULT_QUALITY', 85),
     ],
 
     /*
@@ -207,8 +207,8 @@ return [
     | it easier to maintain image sizes across your application.
     |
     | Usage in Blade:
-    | <x-glide-img src="image.jpg" glide-preset="thumbnail" />
-    | <x-glide-img src="image.jpg" glide-preset="hero" />
+    | <x-glider-img src="image.jpg" glide-preset="thumbnail" />
+    | <x-glider-img src="image.jpg" glide-preset="hero" />
     |
     | Available parameters: any League/Glide parameter
     | - w, h: width and height
@@ -285,10 +285,10 @@ return [
     |--------------------------------------------------------------------------
     |
     | Define responsive background image configurations for the
-    | <x-glide-bg> component. Each preset contains breakpoint definitions
+    | <x-glider-bg> component. Each preset contains breakpoint definitions
     | with their corresponding image manipulation parameters.
     |
-    | Usage: <x-glide-bg src="hero.jpg" preset="hero" />
+    | Usage: <x-glider-bg src="hero.jpg" preset="hero" />
     |
     | Breakpoints can use named breakpoints (xs, sm, md, lg, xl) or
     | pixel values (320, 768, 1024, etc.)

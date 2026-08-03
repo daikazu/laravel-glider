@@ -4,7 +4,7 @@ declare(strict_types=1);
 
 namespace Daikazu\LaravelGlider\Http\Controllers;
 
-use Daikazu\LaravelGlider\Facades\Glide;
+use Daikazu\LaravelGlider\Facades\Glider;
 use Illuminate\Http\Request;
 use League\Glide\Filesystem\FileNotFoundException;
 use League\Glide\Filesystem\FilesystemException;
@@ -16,16 +16,16 @@ class GlideController
 {
     public function __invoke(Request $request, Server $server, string $encodedPath, string $encodedParams, string $extension): Response
     {
-        $path = Glide::decodePath($encodedPath);
-        $params = Glide::decodeParams($encodedParams);
+        $path = Glider::decodePath($encodedPath);
+        $params = Glider::decodeParams($encodedParams);
         $params['fm'] ??= $extension;
-        $sourceFilesystem = Glide::getSourceFilesystem($path);
+        $sourceFilesystem = Glider::getSourceFilesystem($path);
 
         $server->setSource($sourceFilesystem);
-        $server->setCachePathCallable(fn (string $path, array $params = []): string => Glide::getCachePath($path, $params));
+        $server->setCachePathCallable(fn (string $path, array $params = []): string => Glider::getCachePath($path, $params));
 
         // For HTTP sources, extract just the filename since the adapter has the base URL
-        $imagePath = Glide::getImagePath($path);
+        $imagePath = Glider::getImagePath($path);
 
         try {
             return $server->getImageResponse($imagePath, $params);

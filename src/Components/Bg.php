@@ -4,7 +4,7 @@ declare(strict_types=1);
 
 namespace Daikazu\LaravelGlider\Components;
 
-use Daikazu\LaravelGlider\Facades\Glide;
+use Daikazu\LaravelGlider\Facades\Glider;
 use Illuminate\Support\Str;
 use Illuminate\View\Component;
 
@@ -59,7 +59,7 @@ class Bg extends Component
      */
     public function getBackgroundUrl(): string
     {
-        return Glide::getUrl($this->src, $this->mergeGlideAttributes());
+        return Glider::getUrl($this->src, $this->mergeGlideAttributes());
     }
 
     /**
@@ -94,7 +94,7 @@ class Bg extends Component
             return null;
         }
 
-        return Glide::getUrl($this->fallback, $this->mergeGlideAttributes());
+        return Glider::getUrl($this->fallback, $this->mergeGlideAttributes());
     }
 
     /**

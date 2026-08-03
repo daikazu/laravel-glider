@@ -22,7 +22,7 @@ use League\Flysystem\Filesystem;
  * @method static array getBackgroundPreset(string $presetName)
  * @method static string generateBackgroundCSS(string $path, array $breakpoints, string $selector, array $options = [])
  */
-class Glide extends Facade
+class Glider extends Facade
 {
     protected static function getFacadeAccessor(): string
     {

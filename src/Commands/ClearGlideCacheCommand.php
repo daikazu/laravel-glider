@@ -18,7 +18,7 @@ class ClearGlideCacheCommand extends Command
     public function handle(): int
     {
 
-        $cachePath = (string) config('laravel-glider.cache');
+        $cachePath = (string) config('glider.cache');
 
         // Fun banner
         $this->line('');

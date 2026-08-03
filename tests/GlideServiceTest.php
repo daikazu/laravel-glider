@@ -3,14 +3,15 @@
 declare(strict_types=1);
 
 use Daikazu\LaravelGlider\GlideService;
+use League\Flysystem\Filesystem;
 
 beforeEach(function () {
     config([
-        'laravel-glider.source'             => __DIR__ . '/fixtures',
-        'laravel-glider.cache'              => sys_get_temp_dir() . '/glide-cache',
-        'laravel-glider.base_url'           => 'img',
-        'laravel-glider.sign_key'           => 'test-key',
-        'laravel-glider.background_presets' => [
+        'glider.source'             => __DIR__ . '/fixtures',
+        'glider.cache'              => sys_get_temp_dir() . '/glide-cache',
+        'glider.base_url'           => 'img',
+        'glider.sign_key'           => 'test-key',
+        'glider.background_presets' => [
             'hero' => [
                 'xs' => ['w' => 768, 'h' => 400],
                 'lg' => ['w' => 1440, 'h' => 600],
@@ -62,28 +63,28 @@ test('it gets local filesystem for local paths', function () {
     $service = new GlideService;
     $filesystem = $service->getSourceFilesystem('local/image.jpg');
 
-    expect($filesystem)->toBeInstanceOf(\League\Flysystem\Filesystem::class);
+    expect($filesystem)->toBeInstanceOf(Filesystem::class);
 });
 
 test('it gets HTTP filesystem for URLs', function () {
     $service = new GlideService;
     $filesystem = $service->getSourceFilesystem('https://example.com/image.jpg');
 
-    expect($filesystem)->toBeInstanceOf(\League\Flysystem\Filesystem::class);
+    expect($filesystem)->toBeInstanceOf(Filesystem::class);
 });
 
 test('it handles URLs with ports', function () {
     $service = new GlideService;
     $filesystem = $service->getSourceFilesystem('https://example.com:8080/image.jpg');
 
-    expect($filesystem)->toBeInstanceOf(\League\Flysystem\Filesystem::class);
+    expect($filesystem)->toBeInstanceOf(Filesystem::class);
 });
 
 test('it handles URLs with base paths', function () {
     $service = new GlideService;
     $filesystem = $service->getSourceFilesystem('https://cdn.example.com/images/photo.jpg');
 
-    expect($filesystem)->toBeInstanceOf(\League\Flysystem\Filesystem::class);
+    expect($filesystem)->toBeInstanceOf(Filesystem::class);
 });
 
 test('it processes remote URLs even with no explicit params', function () {
@@ -293,7 +294,7 @@ test('it removes signature and p params when encoding', function () {
 });
 
 test('it does not add signature when secure is false', function () {
-    config(['laravel-glider.secure' => false]);
+    config(['glider.secure' => false]);
 
     $service = new GlideService;
     $url = $service->getUrl('test.jpg', ['w' => 400]);
@@ -303,7 +304,7 @@ test('it does not add signature when secure is false', function () {
 });
 
 test('it adds signature when secure is true', function () {
-    config(['laravel-glider.secure' => true]);
+    config(['glider.secure' => true]);
 
     $service = new GlideService;
     $url = $service->getUrl('test.jpg', ['w' => 400]);
@@ -351,7 +352,7 @@ test('it encodes and decodes paths with apostrophes', function () {
 });
 
 test('it generates valid URLs for files with accented characters', function () {
-    config(['laravel-glider.secure' => false]);
+    config(['glider.secure' => false]);
 
     $service = new GlideService;
     $url = $service->getUrl('café-image.jpg', ['w' => 400]);
@@ -367,7 +368,7 @@ test('it generates valid URLs for files with accented characters', function () {
 });
 
 test('it generates valid URLs for files with apostrophes', function () {
-    config(['laravel-glider.secure' => false]);
+    config(['glider.secure' => false]);
 
     $service = new GlideService;
     $url = $service->getUrl("l'apostrophe.jpg", ['w' => 400]);
@@ -385,7 +386,7 @@ test('it generates valid URLs for files with apostrophes', function () {
 test('it can serve image with accented characters via HTTP', function () {
     $this->withoutExceptionHandling();
 
-    config(['laravel-glider.source' => __DIR__ . '/fixtures']);
+    config(['glider.source' => __DIR__ . '/fixtures']);
 
     $service = new GlideService;
     $url = $service->getUrl('café-image.jpg', ['w' => 100]);
@@ -397,7 +398,7 @@ test('it can serve image with accented characters via HTTP', function () {
 test('it can serve image with apostrophe via HTTP', function () {
     $this->withoutExceptionHandling();
 
-    config(['laravel-glider.source' => __DIR__ . '/fixtures']);
+    config(['glider.source' => __DIR__ . '/fixtures']);
 
     $service = new GlideService;
     $url = $service->getUrl("l'apostrophe.jpg", ['w' => 100]);
@@ -409,7 +410,7 @@ test('it can serve image with apostrophe via HTTP', function () {
 test('it can serve image with ñ character via HTTP', function () {
     $this->withoutExceptionHandling();
 
-    config(['laravel-glider.source' => __DIR__ . '/fixtures']);
+    config(['glider.source' => __DIR__ . '/fixtures']);
 
     $service = new GlideService;
     $url = $service->getUrl('ñoño.jpg', ['w' => 100]);
@@ -421,7 +422,7 @@ test('it can serve image with ñ character via HTTP', function () {
 test('it can serve regular ASCII image via HTTP', function () {
     $this->withoutExceptionHandling();
 
-    config(['laravel-glider.source' => __DIR__ . '/fixtures']);
+    config(['glider.source' => __DIR__ . '/fixtures']);
 
     $service = new GlideService;
     $url = $service->getUrl('test-tiny.jpg', ['w' => 100]);
@@ -431,7 +432,7 @@ test('it can serve regular ASCII image via HTTP', function () {
 });
 
 test('it removes signature from URL when manually provided in params', function () {
-    config(['laravel-glider.secure' => true]);
+    config(['glider.secure' => true]);
 
     $service = new GlideService;
     // Even if 's' is provided in params, it should be removed and regenerated
@@ -444,8 +445,8 @@ test('it removes signature from URL when manually provided in params', function 
 
 test('it maps preset parameter to p for League/Glide compatibility', function () {
     config([
-        'laravel-glider.secure'  => false,
-        'laravel-glider.presets' => [
+        'glider.secure'  => false,
+        'glider.presets' => [
             'thumb' => ['w' => 150, 'h' => 150, 'fit' => 'crop', 'q' => 90],
         ],
     ]);
@@ -474,8 +475,8 @@ test('it maps preset parameter to p for League/Glide compatibility', function ()
 
 test('preset parameters can be overridden by explicit params', function () {
     config([
-        'laravel-glider.secure'  => false,
-        'laravel-glider.presets' => [
+        'glider.secure'  => false,
+        'glider.presets' => [
             'thumb' => ['w' => 150, 'h' => 150, 'fit' => 'crop', 'q' => 90],
         ],
     ]);
@@ -496,8 +497,8 @@ test('preset parameters can be overridden by explicit params', function () {
 
 test('preset parameter is not included in encoded URL params', function () {
     config([
-        'laravel-glider.secure'  => false,
-        'laravel-glider.presets' => [
+        'glider.secure'  => false,
+        'glider.presets' => [
             'thumb' => ['w' => 150, 'h' => 150],
         ],
     ]);

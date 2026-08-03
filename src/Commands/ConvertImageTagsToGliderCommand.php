@@ -156,7 +156,7 @@ class ConvertImageTagsToGliderCommand extends Command
             $cleanSrc = $this->cleanSrcValue($srcValue, $imagePath);
 
             // Build the glider component with all original attributes preserved
-            $componentType = $useResponsive ? 'x-glide-img-responsive' : 'x-glide-img';
+            $componentType = $useResponsive ? 'x-glider-img-responsive' : 'x-glider-img';
 
             // Start with the cleaned src
             $attributes = ['src="' . $cleanSrc . '"'];

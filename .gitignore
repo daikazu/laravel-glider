@@ -30,5 +30,5 @@ CLAUDE.md
 phpunit.xml
 phpstan.neon
 testbench.yaml
-/docs
+/docs/superpowers
 /coverage

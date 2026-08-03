@@ -4,7 +4,7 @@ declare(strict_types=1);
 
 namespace Daikazu\LaravelGlider\Components;
 
-use Daikazu\LaravelGlider\Facades\Glide;
+use Daikazu\LaravelGlider\Facades\Glider;
 use Illuminate\Support\Facades\Cache;
 
 use function Illuminate\Filesystem\join_paths;
@@ -37,7 +37,7 @@ class ImgResponsive extends BaseComponent
         }
 
         return collect($widths)->map(function (int $size): string {
-            $url = Glide::getUrl(
+            $url = Glider::getUrl(
                 $this->src,
                 $this->glideAttributes()->merge(['q' => 85, 'fm' => 'webp', 'w' => $size])->toArray()
             );
@@ -51,7 +51,7 @@ class ImgResponsive extends BaseComponent
      */
     protected function getSrcsetWidthsFromImg(): ?array
     {
-        $imagePath = join_paths(config('laravel-glider.source'), $this->src);
+        $imagePath = join_paths(config('glider.source'), $this->src);
         if (! file_exists($imagePath)) {
             return null;
         }
@@ -113,14 +113,14 @@ class ImgResponsive extends BaseComponent
         // - Otherwise, the key is based on the source image mtime to auto-bust on updates.
         // - Include config hash to bust cache when config changes
         $configHash = md5(json_encode([
-            config('laravel-glider.defaults'),
-            config('laravel-glider.presets'),
+            config('glider.defaults'),
+            config('glider.presets'),
         ]) ?: '');
 
         if ($this->srcsetWidths !== null) {
             $key = 'glide:' . sha1($this->src) . ':srcset_widths:custom:' . md5(implode(',', $this->srcsetWidths)) . ':' . $configHash;
         } else {
-            $imagePath = join_paths(config('laravel-glider.source'), $this->src);
+            $imagePath = join_paths(config('glider.source'), $this->src);
             $mtime = is_file($imagePath) ? (filemtime($imagePath) ?: 0) : 0;
             $key = 'glide:' . sha1($this->src) . ':srcset_widths:img:' . $mtime . ':' . $configHash;
         }

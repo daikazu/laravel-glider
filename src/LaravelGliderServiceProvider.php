@@ -10,7 +10,7 @@ use Daikazu\LaravelGlider\Components\Bg;
 use Daikazu\LaravelGlider\Components\BgResponsive;
 use Daikazu\LaravelGlider\Components\Img;
 use Daikazu\LaravelGlider\Components\ImgResponsive;
-use Daikazu\LaravelGlider\Facades\Glide;
+use Daikazu\LaravelGlider\Facades\Glider;
 use Daikazu\LaravelGlider\Factories\ResponseFactory;
 use Illuminate\Contracts\Foundation\Application;
 use Illuminate\Routing\UrlGenerator;
@@ -34,26 +34,26 @@ class LaravelGliderServiceProvider extends PackageServiceProvider
          */
         $package
             ->name('glider')
-            ->hasConfigFile('laravel-glider')
+            ->hasConfigFile('glider')
             ->hasViews()
-            ->hasViewComponents('glide', Img::class, ImgResponsive::class, Bg::class, BgResponsive::class)
+            ->hasViewComponents('glider', Img::class, ImgResponsive::class, Bg::class, BgResponsive::class)
             ->hasRoute('web')
             ->hasCommands(ClearGlideCacheCommand::class, ConvertImageTagsToGliderCommand::class);
     }
 
     public function packageBooted(): void
     {
-        $this->app->singleton(Glide::class, GlideService::class);
+        $this->app->singleton(Glider::class, GlideService::class);
 
-        $this->app->instance(SignatureInterface::class, SignatureFactory::create((string) config('laravel-glider.sign_key', '')));
+        $this->app->instance(SignatureInterface::class, SignatureFactory::create((string) config('glider.sign_key', '')));
 
         $this->app->bind(UrlBuilder::class, fn (Application $app): UrlBuilder => UrlBuilderFactory::create(
-            $app->make(UrlGenerator::class)->route('glide', ['path' => '/']),
-            config('laravel-glider.sign_key')
+            $app->make(UrlGenerator::class)->route('glider', ['path' => '/']),
+            config('glider.sign_key')
         ));
 
         $this->app->bind(Server::class, fn (Application $app): Server => ServerFactory::create(
-            array_merge(config('laravel-glider'), ['response' => $app->make(ResponseFactory::class)])
+            array_merge(config('glider'), ['response' => $app->make(ResponseFactory::class)])
         ));
 
         $this->ensureCacheDirectoryExists();
@@ -64,7 +64,7 @@ class LaravelGliderServiceProvider extends PackageServiceProvider
      */
     protected function ensureCacheDirectoryExists(): void
     {
-        $cachePath = (string) config('laravel-glider.cache');
+        $cachePath = (string) config('glider.cache');
 
         if ($cachePath === '') {
             return;

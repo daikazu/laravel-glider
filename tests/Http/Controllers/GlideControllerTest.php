@@ -2,7 +2,7 @@
 
 declare(strict_types=1);
 
-use Daikazu\LaravelGlider\Facades\Glide;
+use Daikazu\LaravelGlider\Facades\Glider;
 use Daikazu\LaravelGlider\Http\Controllers\GlideController;
 use Illuminate\Http\Request;
 use League\Flysystem\Filesystem;
@@ -14,7 +14,7 @@ use Mockery as m;
 use Symfony\Component\HttpFoundation\Response;
 use Symfony\Component\HttpKernel\Exception\NotFoundHttpException;
 
-function makeGlideStub(string $decodedPath, array $decodedParams, Filesystem $filesystem, ?\Closure $onGetCachePath = null): object
+function makeGlideStub(string $decodedPath, array $decodedParams, Filesystem $filesystem, ?Closure $onGetCachePath = null): object
 {
     return new class($decodedPath, $decodedParams, $filesystem, $onGetCachePath)
     {
@@ -22,7 +22,7 @@ function makeGlideStub(string $decodedPath, array $decodedParams, Filesystem $fi
             private string $decodedPath,
             private array $decodedParams,
             private Filesystem $filesystem,
-            private ?\Closure $onGetCachePath = null,
+            private ?Closure $onGetCachePath = null,
         ) {}
 
         public function decodePath(string $string): string
@@ -69,7 +69,7 @@ it('returns the server response and sets fm from extension when missing', functi
     $filesystem = new Filesystem(new LocalFilesystemAdapter(sys_get_temp_dir()));
 
     // Swap the Glide facade with a simple stub object
-    Glide::swap(makeGlideStub(
+    Glider::swap(makeGlideStub(
         $decodedPath,
         $decodedParams,
         $filesystem,
@@ -91,7 +91,7 @@ it('returns the server response and sets fm from extension when missing', functi
         ->once()
         ->with(m::on(function ($callable) use ($decodedPath, $extension) {
             expect(is_callable($callable))->toBeTrue();
-            // When we call it, it should return the value from Glide::getCachePath
+            // When we call it, it should return the value from Glider::getCachePath
             $result = $callable($decodedPath, ['w' => 200, 'fm' => $extension]);
             expect($result)->toBe('some/cache/path');
             return true;
@@ -123,7 +123,7 @@ it('does not override fm when provided in params', function () {
 
     $filesystem = new Filesystem(new LocalFilesystemAdapter(sys_get_temp_dir()));
 
-    Glide::swap(makeGlideStub(
+    Glider::swap(makeGlideStub(
         $decodedPath,
         $decodedParams,
         $filesystem,
@@ -159,7 +159,7 @@ it('throws NotFoundHttpException when Server throws FileNotFoundException', func
 
     $filesystem = new Filesystem(new LocalFilesystemAdapter(sys_get_temp_dir()));
 
-    Glide::swap(makeGlideStub(
+    Glider::swap(makeGlideStub(
         $decodedPath,
         $decodedParams,
         $filesystem
@@ -192,7 +192,7 @@ it('throws NotFoundHttpException when Server throws FilesystemException', functi
 
     $filesystem = new Filesystem(new LocalFilesystemAdapter(sys_get_temp_dir()));
 
-    Glide::swap(makeGlideStub(
+    Glider::swap(makeGlideStub(
         $decodedPath,
         $decodedParams,
         $filesystem

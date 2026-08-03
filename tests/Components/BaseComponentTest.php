@@ -3,12 +3,13 @@
 declare(strict_types=1);
 
 use Daikazu\LaravelGlider\Components\BaseComponent;
-use Daikazu\LaravelGlider\Facades\Glide;
+use Daikazu\LaravelGlider\Facades\Glider;
+use Illuminate\Support\Collection;
 use Illuminate\View\ComponentAttributeBag;
 use Mockery as m;
 
 beforeEach(function () {
-    config(['laravel-glider.source' => __DIR__ . '/../fixtures']);
+    config(['glider.source' => __DIR__ . '/../fixtures']);
 
     // Create a basic test view
     $viewPath = __DIR__ . '/../views';
@@ -38,7 +39,7 @@ function createTestComponent(string $src, array $attributes = []): BaseComponent
         }
 
         // Make protected methods public for testing
-        public function glideAttributes(): \Illuminate\Support\Collection
+        public function glideAttributes(): Collection
         {
             return parent::glideAttributes();
         }
@@ -79,7 +80,7 @@ function createMockedDimensionsComponent(string $src, array $attributes = [], ?a
             $this->attributes = $attributes;
         }
 
-        public function glideAttributes(): \Illuminate\Support\Collection
+        public function glideAttributes(): Collection
         {
             return parent::glideAttributes();
         }
@@ -113,7 +114,7 @@ it('returns the configured view when render is called', function () {
 
 it('generates URLs using Glide facade in src method', function () {
     // Mock the Glide facade by replacing it entirely
-    $originalInstance = Glide::getFacadeRoot();
+    $originalInstance = Glider::getFacadeRoot();
 
     $mockService = m::mock();
     $mockService->shouldReceive('getUrl')
@@ -121,7 +122,7 @@ it('generates URLs using Glide facade in src method', function () {
         ->with('test-image.jpg', [])
         ->andReturn('http://example.com/img/abc123/def456.jpg');
 
-    Glide::swap($mockService);
+    Glider::swap($mockService);
 
     $component = createTestComponent('test-image.jpg');
     $result = $component->src();
@@ -129,11 +130,11 @@ it('generates URLs using Glide facade in src method', function () {
     expect($result)->toBe('http://example.com/img/abc123/def456.jpg');
 
     // Restore original instance
-    Glide::swap($originalInstance);
+    Glider::swap($originalInstance);
 });
 
 it('passes glide attributes to Glide facade', function () {
-    $originalInstance = Glide::getFacadeRoot();
+    $originalInstance = Glider::getFacadeRoot();
 
     $mockService = m::mock();
     $mockService->shouldReceive('getUrl')
@@ -141,7 +142,7 @@ it('passes glide attributes to Glide facade', function () {
         ->with('test.jpg', ['w' => '300', 'h' => '200', 'q' => '85'])
         ->andReturn('http://example.com/img/processed.jpg');
 
-    Glide::swap($mockService);
+    Glider::swap($mockService);
 
     $component = createTestComponent('test.jpg', [
         'glide-w' => '300',
@@ -152,7 +153,7 @@ it('passes glide attributes to Glide facade', function () {
 
     $component->src();
 
-    Glide::swap($originalInstance);
+    Glider::swap($originalInstance);
 });
 
 it('extracts glide attributes correctly', function () {

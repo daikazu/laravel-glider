@@ -125,7 +125,7 @@ describe('Path Traversal Security', function () {
 
     it('allows valid paths after decoding', function () {
         // Ensure the configured source directory exists for realpath() validation
-        $sourcePath = config('laravel-glider.source');
+        $sourcePath = config('glider.source');
         if (! is_dir($sourcePath)) {
             mkdir($sourcePath, 0755, true);
         }

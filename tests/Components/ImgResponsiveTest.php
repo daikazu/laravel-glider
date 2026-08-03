@@ -3,21 +3,21 @@
 declare(strict_types=1);
 
 use Daikazu\LaravelGlider\Components\ImgResponsive;
-use Daikazu\LaravelGlider\Facades\Glide;
+use Daikazu\LaravelGlider\Facades\Glider;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\Cache;
 use Illuminate\View\ComponentAttributeBag;
 use Mockery as m;
 
 beforeEach(function () {
-    config(['laravel-glider.source' => __DIR__ . '/../fixtures']);
+    config(['glider.source' => __DIR__ . '/../fixtures']);
 
     // Create test views directory
     $viewPath = __DIR__ . '/../views';
     @mkdir($viewPath, 0755, true);
     file_put_contents($viewPath . '/img-responsive.blade.php', '<img src="{{ $src() }}" srcset="{{ $srcset() }}" />');
     view()->addLocation($viewPath);
-    view()->addNamespace('laravel-glider', $viewPath);
+    view()->addNamespace('glider', $viewPath);
 });
 
 afterEach(function () {
@@ -132,7 +132,7 @@ it('handles null srcsetWidths', function () {
 });
 
 it('generates srcset string with custom widths', function () {
-    $originalInstance = Glide::getFacadeRoot();
+    $originalInstance = Glider::getFacadeRoot();
 
     $mockService = m::mock();
     $mockService->shouldReceive('getUrl')
@@ -142,7 +142,7 @@ it('generates srcset string with custom widths', function () {
             return "http://example.com/img/{$src}?w={$width}&q=85&fm=webp";
         });
 
-    Glide::swap($mockService);
+    Glider::swap($mockService);
 
     $component = createTestImgResponsive('test.jpg', '400,800,1200');
     $srcset = $component->srcset();
@@ -153,7 +153,7 @@ it('generates srcset string with custom widths', function () {
     expect($srcset)->toContain('q=85');
     expect($srcset)->toContain('fm=webp');
 
-    Glide::swap($originalInstance);
+    Glider::swap($originalInstance);
 });
 
 it('returns null srcset when no widths available', function () {
@@ -312,7 +312,7 @@ it('normalizes widths converts strings to integers', function () {
 });
 
 it('merges glide attributes correctly in srcset generation', function () {
-    $originalInstance = Glide::getFacadeRoot();
+    $originalInstance = Glider::getFacadeRoot();
 
     $mockService = m::mock();
     $mockService->shouldReceive('getUrl')
@@ -320,18 +320,18 @@ it('merges glide attributes correctly in srcset generation', function () {
         ->with('test.jpg', ['custom' => 'value', 'q' => 85, 'fm' => 'webp', 'w' => 400])
         ->andReturn('http://example.com/img/test.jpg?custom=value&q=85&fm=webp&w=400');
 
-    Glide::swap($mockService);
+    Glider::swap($mockService);
 
     $component = createTestImgResponsive('test.jpg', '400', ['glide-custom' => 'value']);
     $srcset = $component->srcset();
 
     expect($srcset)->toBe('http://example.com/img/test.jpg?custom=value&q=85&fm=webp&w=400 400w');
 
-    Glide::swap($originalInstance);
+    Glider::swap($originalInstance);
 });
 
 it('uses default quality and format when not overridden', function () {
-    $originalInstance = Glide::getFacadeRoot();
+    $originalInstance = Glider::getFacadeRoot();
 
     $mockService = m::mock();
     $mockService->shouldReceive('getUrl')
@@ -347,7 +347,7 @@ it('uses default quality and format when not overridden', function () {
             return 'http://example.com/img/test.jpg?q=85&fm=webp&w=400';
         });
 
-    Glide::swap($mockService);
+    Glider::swap($mockService);
 
     $component = createTestImgResponsive('test.jpg', '400', [
         'glide-q'  => '95',
@@ -357,7 +357,7 @@ it('uses default quality and format when not overridden', function () {
 
     expect($srcset)->toBe('http://example.com/img/test.jpg?q=85&fm=webp&w=400 400w');
 
-    Glide::swap($originalInstance);
+    Glider::swap($originalInstance);
 });
 
 it('handles filesize calculation correctly for srcset generation', function () {

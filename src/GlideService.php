@@ -45,14 +45,14 @@ final class GlideService
     public function getCachePath(string $path, array $params = []): string
     {
         $routeParams = $this->getRouteParams($path, $params);
-        $fullRoute = route('glide', $routeParams, false);
+        $fullRoute = route('glider', $routeParams, false);
 
-        return ltrim(Str::after($fullRoute, '/' . config('laravel-glider.base_url')), '/');
+        return ltrim(Str::after($fullRoute, '/' . config('glider.base_url')), '/');
     }
 
     public function getSourceFilesystem(string $path): Filesystem
     {
-        $adapter = new LocalFilesystemAdapter(config('laravel-glider.source'));
+        $adapter = new LocalFilesystemAdapter(config('glider.source'));
 
         // Check if path contains a scheme (URL-like)
         if (Str::isUrl($path) || str_contains($path, '://')) {
@@ -117,7 +117,7 @@ final class GlideService
         // (Only for local paths, not URLs)
         if ($params === [] && ! Str::isUrl($path)) {
             $publicRoot = config('filesystems.disks.public.root');
-            $sourceRoot = config('laravel-glider.source');
+            $sourceRoot = config('glider.source');
 
             if (is_string($publicRoot) && is_string($sourceRoot) && Str::startsWith($sourceRoot, $publicRoot)) {
                 return Storage::disk('public')->url($path);
@@ -132,14 +132,14 @@ final class GlideService
         $routeParams = $this->getRouteParams($path, $params);
 
         // Only add signature if secure mode is enabled
-        if (config('laravel-glider.secure', true)) {
+        if (config('glider.secure', true)) {
             $signedParams = app(SignatureInterface::class)
-                ->addSignature(route('glide', $routeParams, false), []);
+                ->addSignature(route('glider', $routeParams, false), []);
 
             $routeParams['s'] = $signedParams['s'];
         }
 
-        return route('glide', $routeParams);
+        return route('glider', $routeParams);
     }
 
     /**
@@ -176,7 +176,7 @@ final class GlideService
      */
     public function getBackgroundPreset(string $presetName): array
     {
-        $presets = config('laravel-glider.background_presets', []);
+        $presets = config('glider.background_presets', []);
 
         if (! isset($presets[$presetName])) {
             throw new InvalidArgumentException("Background preset '{$presetName}' not found");
@@ -253,7 +253,7 @@ final class GlideService
 
     private function encodePath(string $path): string
     {
-        if (Str::isUrl($path) && Str::startsWith($path, config('app.url')) && ! Str::startsWith($path, url(config('laravel-glider.base_url')))) {
+        if (Str::isUrl($path) && Str::startsWith($path, config('app.url')) && ! Str::startsWith($path, url(config('glider.base_url')))) {
             $path = Str::after($path, config('app.url'));
         }
 
@@ -340,7 +340,7 @@ final class GlideService
         }
 
         // Validate that resolved path stays within source directory
-        $sourcePath = (string) realpath(config('laravel-glider.source'));
+        $sourcePath = (string) realpath(config('glider.source'));
         if ($sourcePath === '') {
             throw new InvalidArgumentException('Invalid source configuration: path does not exist');
         }

@@ -4,7 +4,7 @@ declare(strict_types=1);
 
 namespace Daikazu\LaravelGlider\Components;
 
-use Daikazu\LaravelGlider\Facades\Glide;
+use Daikazu\LaravelGlider\Facades\Glider;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Str;
 use Illuminate\View\Component;
@@ -104,7 +104,7 @@ class BgResponsive extends Component
             return null;
         }
 
-        return Glide::getUrl($this->fallback, $this->mergeGlideAttributes());
+        return Glider::getUrl($this->fallback, $this->mergeGlideAttributes());
     }
 
     /**
@@ -169,7 +169,7 @@ class BgResponsive extends Component
      */
     protected function getPresetBreakpoints(): Collection
     {
-        $presets = config('laravel-glider.background_presets', []);
+        $presets = config('glider.background_presets', []);
 
         if (! isset($presets[$this->preset])) {
             throw new InvalidArgumentException("Background preset '{$this->preset}' not found in config");
@@ -203,7 +203,7 @@ class BgResponsive extends Component
                 'name'      => $key,
                 'min_width' => $minWidth,
                 'params'    => $glideParams,
-                'url'       => Glide::getUrl($this->src, $glideParams),
+                'url'       => Glider::getUrl($this->src, $glideParams),
             ]);
         }
 
