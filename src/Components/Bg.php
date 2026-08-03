@@ -5,13 +5,14 @@ declare(strict_types=1);
 namespace Daikazu\LaravelGlider\Components;
 
 use Daikazu\LaravelGlider\Facades\Glider;
+use Daikazu\LaravelGlider\Support\CssSanitizer;
+use Daikazu\LaravelGlider\Support\FocalPoint;
+use Daikazu\LaravelGlider\Support\GlideAttributes;
 use Illuminate\Support\Str;
 use Illuminate\View\Component;
 
 class Bg extends Component
 {
-    protected string $view = 'glider::components.background';
-
     private ?string $componentId = null;
 
     public function __construct(
@@ -22,14 +23,11 @@ class Bg extends Component
         public string $attachment = 'scroll',
         public ?string $fallback = null,
         public bool $lazy = false,
-    ) {
-        // Handle focal-point attribute for background-position
-        // Will be set via attributes, but we initialize position with a default if not provided
-    }
+    ) {}
 
     public function render()
     {
-        return view($this->view);
+        return view('glider::components.background');
     }
 
     /**
@@ -38,14 +36,14 @@ class Bg extends Component
     public function generateBackgroundCSS(): string
     {
         $componentId = $this->getComponentId();
-        $url = $this->sanitizeCSSUrl($this->getBackgroundUrl());
+        $url = CssSanitizer::url($this->getBackgroundUrl());
 
         $properties = [
             "background-image: url('{$url}')",
-            "background-position: {$this->sanitizeCSSValue($this->getBackgroundPosition())}",
-            "background-size: {$this->sanitizeCSSValue($this->size)}",
-            "background-repeat: {$this->sanitizeCSSValue($this->repeat)}",
-            "background-attachment: {$this->sanitizeCSSValue($this->attachment)}",
+            'background-position: ' . CssSanitizer::value($this->getBackgroundPosition()),
+            'background-size: ' . CssSanitizer::value($this->size),
+            'background-repeat: ' . CssSanitizer::value($this->repeat),
+            'background-attachment: ' . CssSanitizer::value($this->attachment),
         ];
 
         $rule = implode('; ', $properties) . ';';
@@ -59,7 +57,7 @@ class Bg extends Component
      */
     public function getBackgroundUrl(): string
     {
-        return Glider::getUrl($this->src, $this->mergeGlideAttributes());
+        return Glider::getUrl($this->src, GlideAttributes::from($this->attributes));
     }
 
     /**
@@ -94,7 +92,7 @@ class Bg extends Component
             return null;
         }
 
-        return Glider::getUrl($this->fallback, $this->mergeGlideAttributes());
+        return Glider::getUrl($this->fallback, GlideAttributes::from($this->attributes));
     }
 
     /**
@@ -113,106 +111,12 @@ class Bg extends Component
     }
 
     /**
-     * Get the background-position CSS value
-     * Uses focal-point attribute if provided, otherwise falls back to position property
+     * Get the background-position CSS value.
+     * Uses the focal-point attribute if provided, otherwise falls back to
+     * the position property.
      */
     public function getBackgroundPosition(): string
     {
-        // Check for focal-point attribute first
-        if ($this->attributes->has('focal-point')) {
-            $bgPosition = $this->parseFocalPoint($this->attributes->get('focal-point'));
-            if ($bgPosition !== null) {
-                return $bgPosition;
-            }
-        }
-
-        // Fall back to position property
-        return $this->position ?? 'center';
-    }
-
-    /**
-     * Parse focal point attribute into CSS background-position value
-     *
-     * Accepts formats:
-     * - "50,50" or "50, 50" - x,y percentages (0-100)
-     * - "center" - shorthand for 50% 50%
-     * - "top" - shorthand for 50% 0%
-     * - "bottom" - shorthand for 50% 100%
-     * - "left" - shorthand for 0% 50%
-     * - "right" - shorthand for 100% 50%
-     * - "top-left" - shorthand for 0% 0%
-     * - "top-right" - shorthand for 100% 0%
-     * - "bottom-left" - shorthand for 0% 100%
-     * - "bottom-right" - shorthand for 100% 100%
-     */
-    protected function parseFocalPoint(mixed $focalPoint): ?string
-    {
-        if (! is_string($focalPoint) || $focalPoint === '' || $focalPoint === '0') {
-            return null;
-        }
-
-        $focalPoint = strtolower(trim($focalPoint));
-
-        // Named positions
-        $namedPositions = [
-            'center'       => '50% 50%',
-            'top'          => '50% 0%',
-            'bottom'       => '50% 100%',
-            'left'         => '0% 50%',
-            'right'        => '100% 50%',
-            'top-left'     => '0% 0%',
-            'top-right'    => '100% 0%',
-            'bottom-left'  => '0% 100%',
-            'bottom-right' => '100% 100%',
-        ];
-
-        if (isset($namedPositions[$focalPoint])) {
-            return $namedPositions[$focalPoint];
-        }
-
-        // Parse x,y coordinates
-        if (str_contains($focalPoint, ',')) {
-            $parts = array_map('trim', explode(',', $focalPoint));
-            if (count($parts) === 2) {
-                $x = (int) $parts[0];
-                $y = (int) $parts[1];
-
-                // Validate range 0-100
-                if ($x >= 0 && $x <= 100 && $y >= 0 && $y <= 100) {
-                    return "{$x}% {$y}%";
-                }
-            }
-        }
-
-        return null;
-    }
-
-    /**
-     * Merge Glide attributes from component attributes
-     */
-    protected function mergeGlideAttributes(array $params = []): array
-    {
-        $glideAttributes = collect($this->attributes->whereStartsWith('glide-'))
-            ->mapWithKeys(fn ($item, string $key) => [Str::after($key, 'glide-') => $item]);
-
-        return array_merge($glideAttributes->toArray(), $params);
-    }
-
-    /**
-     * Sanitize URL for use in CSS to prevent XSS
-     */
-    private function sanitizeCSSUrl(string $url): string
-    {
-        // Escape quotes and backslashes that could break out of CSS context
-        return addcslashes($url, "'\\");
-    }
-
-    /**
-     * Sanitize CSS value to prevent XSS
-     */
-    private function sanitizeCSSValue(string $value): string
-    {
-        // Allow only safe CSS characters: alphanumeric, spaces, hyphens, underscores, percentages, commas, parentheses
-        return preg_replace('/[^a-zA-Z0-9\s\-_%.,()]/i', '', $value) ?? '';
+        return FocalPoint::parse($this->attributes->get('focal-point')) ?? $this->position ?? 'center';
     }
 }

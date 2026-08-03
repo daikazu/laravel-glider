@@ -5,15 +5,16 @@ declare(strict_types=1);
 namespace Daikazu\LaravelGlider\Components;
 
 use Daikazu\LaravelGlider\Facades\Glider;
+use Daikazu\LaravelGlider\Support\BackgroundBreakpoints;
+use Daikazu\LaravelGlider\Support\CssSanitizer;
+use Daikazu\LaravelGlider\Support\FocalPoint;
+use Daikazu\LaravelGlider\Support\GlideAttributes;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Str;
 use Illuminate\View\Component;
-use InvalidArgumentException;
 
 class BgResponsive extends Component
 {
-    protected string $view = 'glider::components.responsive-background';
-
     private ?string $componentId = null;
 
     public function __construct(
@@ -26,14 +27,11 @@ class BgResponsive extends Component
         public string $attachment = 'scroll',
         public ?string $fallback = null,
         public bool $lazy = false,
-    ) {
-        // Handle focal-point attribute for background-position
-        // Will be set via attributes, but we initialize position with a default if not provided
-    }
+    ) {}
 
     public function render()
     {
-        return view($this->view);
+        return view('glider::components.responsive-background');
     }
 
     /**
@@ -41,7 +39,7 @@ class BgResponsive extends Component
      */
     public function generateBackgroundCSS(): string
     {
-        $breakpoints = $this->getBreakpoints();
+        $breakpoints = $this->breakpointsWithUrls();
         $cssRules = [];
         $componentId = $this->getComponentId();
 
@@ -51,7 +49,6 @@ class BgResponsive extends Component
             $cssRules[] = $this->generateCSSRule(
                 ".glide-bg-{$componentId}",
                 $defaultBreakpoint['url'],
-                $defaultBreakpoint['params']
             );
         }
 
@@ -61,7 +58,6 @@ class BgResponsive extends Component
             $rule = $this->generateCSSRule(
                 ".glide-bg-{$componentId}",
                 $breakpoint['url'],
-                $breakpoint['params'],
                 true  // Include selector in media queries
             );
             $cssRules[] = $mediaQuery . ' {' . PHP_EOL .
@@ -104,7 +100,7 @@ class BgResponsive extends Component
             return null;
         }
 
-        return Glider::getUrl($this->fallback, $this->mergeGlideAttributes());
+        return Glider::getUrl($this->fallback, GlideAttributes::from($this->attributes));
     }
 
     /**
@@ -116,7 +112,7 @@ class BgResponsive extends Component
             return [];
         }
 
-        $breakpoints = $this->getBreakpoints();
+        $breakpoints = $this->breakpointsWithUrls();
 
         return [
             'data-bg-lazy' => 'true',
@@ -128,207 +124,42 @@ class BgResponsive extends Component
     }
 
     /**
-     * Get the background-position CSS value
-     * Uses focal-point attribute if provided, otherwise falls back to position property
+     * Get the background-position CSS value.
+     * Uses the focal-point attribute if provided, otherwise falls back to
+     * the position property.
      */
     public function getBackgroundPosition(): string
     {
-        // Check for focal-point attribute first
-        if ($this->attributes->has('focal-point')) {
-            $bgPosition = $this->parseFocalPoint($this->attributes->get('focal-point'));
-            if ($bgPosition !== null) {
-                return $bgPosition;
-            }
-        }
-
-        // Fall back to position property
-        return $this->position ?? 'center';
+        return FocalPoint::parse($this->attributes->get('focal-point')) ?? $this->position ?? 'center';
     }
 
     /**
-     * Get all breakpoints with their URLs and parameters
+     * Expand this component's preset/breakpoints/glide-attributes into a
+     * sorted collection of breakpoints, each with its resolved image URL.
      */
-    protected function getBreakpoints(): Collection
+    private function breakpointsWithUrls(): Collection
     {
-        // If using a preset, get breakpoints from config
-        if ($this->preset !== null && $this->preset !== '' && $this->preset !== '0') {
-            return $this->getPresetBreakpoints();
-        }
+        $glideAttributes = GlideAttributes::from($this->attributes);
 
-        // Use custom breakpoints if provided
-        if ($this->breakpoints !== null && $this->breakpoints !== []) {
-            return $this->buildBreakpointsFromArray($this->breakpoints);
-        }
-
-        // Default responsive breakpoints
-        return $this->getDefaultBreakpoints();
-    }
-
-    /**
-     * Get breakpoints from a preset configuration
-     */
-    protected function getPresetBreakpoints(): Collection
-    {
-        $presets = config('glider.background_presets', []);
-
-        if (! isset($presets[$this->preset])) {
-            throw new InvalidArgumentException("Background preset '{$this->preset}' not found in config");
-        }
-
-        $preset = $presets[$this->preset];
-        return $this->buildBreakpointsFromArray($preset['breakpoints'] ?? $preset);
-    }
-
-    /**
-     * Build breakpoints collection from array
-     */
-    protected function buildBreakpointsFromArray(array $breakpoints): Collection
-    {
-        if ($breakpoints === []) {
-            throw new InvalidArgumentException('Breakpoints array cannot be empty');
-        }
-
-        $collection = collect();
-
-        foreach ($breakpoints as $key => $params) {
-            if (! is_array($params)) {
-                throw new InvalidArgumentException("Breakpoint '{$key}' must have an array of parameters");
-            }
-
-            // Handle named breakpoints (xs, sm, md, lg, xl) vs numeric breakpoints
-            $minWidth = $this->getMinWidthFromBreakpoint($key);
-            $glideParams = $this->mergeGlideAttributes($params);
-
-            $collection->push([
-                'name'      => $key,
-                'min_width' => $minWidth,
-                'params'    => $glideParams,
-                'url'       => Glider::getUrl($this->src, $glideParams),
+        return app(BackgroundBreakpoints::class)
+            ->expand($this->preset, $this->breakpoints, $glideAttributes)
+            ->map(fn (array $bp): array => [
+                ...$bp,
+                'url' => Glider::getUrl($this->src, $bp['params']),
             ]);
-        }
-
-        // Sort by min_width
-        return $collection->sortBy('min_width')->values();
-    }
-
-    /**
-     * Get default responsive breakpoints
-     */
-    protected function getDefaultBreakpoints(): Collection
-    {
-        $defaultBreakpoints = [
-            'xs' => ['w' => 480],
-            'sm' => ['w' => 768],
-            'md' => ['w' => 1024],
-            'lg' => ['w' => 1280],
-            'xl' => ['w' => 1920],
-        ];
-
-        return $this->buildBreakpointsFromArray($defaultBreakpoints);
-    }
-
-    /**
-     * Get minimum width for a breakpoint
-     */
-    protected function getMinWidthFromBreakpoint(string | int $breakpoint): int
-    {
-        // If it's already numeric, use it
-        if (is_numeric($breakpoint)) {
-            return (int) $breakpoint;
-        }
-
-        // Map common breakpoint names to pixel values
-        $breakpointMap = [
-            'xs'  => 0,
-            'sm'  => 576,
-            'md'  => 768,
-            'lg'  => 992,
-            'xl'  => 1200,
-            '2xl' => 1400,
-        ];
-
-        return $breakpointMap[$breakpoint] ?? 0;
-    }
-
-    /**
-     * Parse focal point attribute into CSS background-position value
-     *
-     * Accepts formats:
-     * - "50,50" or "50, 50" - x,y percentages (0-100)
-     * - "center" - shorthand for 50% 50%
-     * - "top" - shorthand for 50% 0%
-     * - "bottom" - shorthand for 50% 100%
-     * - "left" - shorthand for 0% 50%
-     * - "right" - shorthand for 100% 50%
-     * - "top-left" - shorthand for 0% 0%
-     * - "top-right" - shorthand for 100% 0%
-     * - "bottom-left" - shorthand for 0% 100%
-     * - "bottom-right" - shorthand for 100% 100%
-     */
-    protected function parseFocalPoint(mixed $focalPoint): ?string
-    {
-        if (! is_string($focalPoint) || $focalPoint === '' || $focalPoint === '0') {
-            return null;
-        }
-
-        $focalPoint = strtolower(trim($focalPoint));
-
-        // Named positions
-        $namedPositions = [
-            'center'       => '50% 50%',
-            'top'          => '50% 0%',
-            'bottom'       => '50% 100%',
-            'left'         => '0% 50%',
-            'right'        => '100% 50%',
-            'top-left'     => '0% 0%',
-            'top-right'    => '100% 0%',
-            'bottom-left'  => '0% 100%',
-            'bottom-right' => '100% 100%',
-        ];
-
-        if (isset($namedPositions[$focalPoint])) {
-            return $namedPositions[$focalPoint];
-        }
-
-        // Parse x,y coordinates
-        if (str_contains($focalPoint, ',')) {
-            $parts = array_map('trim', explode(',', $focalPoint));
-            if (count($parts) === 2) {
-                $x = (int) $parts[0];
-                $y = (int) $parts[1];
-
-                // Validate range 0-100
-                if ($x >= 0 && $x <= 100 && $y >= 0 && $y <= 100) {
-                    return "{$x}% {$y}%";
-                }
-            }
-        }
-
-        return null;
-    }
-
-    /**
-     * Merge Glide attributes from component attributes
-     */
-    protected function mergeGlideAttributes(array $params = []): array
-    {
-        $glideAttributes = collect($this->attributes->whereStartsWith('glide-'))
-            ->mapWithKeys(fn ($item, string $key) => [Str::after($key, 'glide-') => $item]);
-
-        return array_merge($glideAttributes->toArray(), $params);
     }
 
     /**
      * Generate a single CSS rule
      */
-    protected function generateCSSRule(string $selector, string $url, array $params, bool $includeSelector = true): string
+    private function generateCSSRule(string $selector, string $url, bool $includeSelector = true): string
     {
         // Sanitize all values for CSS context
-        $safeUrl = $this->sanitizeCSSUrl($url);
-        $safePosition = $this->sanitizeCSSValue($this->getBackgroundPosition());
-        $safeSize = $this->sanitizeCSSValue($this->size);
-        $safeRepeat = $this->sanitizeCSSValue($this->repeat);
-        $safeAttachment = $this->sanitizeCSSValue($this->attachment);
+        $safeUrl = CssSanitizer::url($url);
+        $safePosition = CssSanitizer::value($this->getBackgroundPosition());
+        $safeSize = CssSanitizer::value($this->size);
+        $safeRepeat = CssSanitizer::value($this->repeat);
+        $safeAttachment = CssSanitizer::value($this->attachment);
 
         $properties = [
             "background-image: url('{$safeUrl}')",
@@ -341,23 +172,5 @@ class BgResponsive extends Component
         $rule = implode('; ', $properties) . ';';
 
         return $includeSelector ? "{$selector} { {$rule} }" : $rule;
-    }
-
-    /**
-     * Sanitize URL for use in CSS to prevent XSS
-     */
-    private function sanitizeCSSUrl(string $url): string
-    {
-        // Escape quotes and backslashes that could break out of CSS context
-        return addcslashes($url, "'\\");
-    }
-
-    /**
-     * Sanitize CSS value to prevent XSS
-     */
-    private function sanitizeCSSValue(string $value): string
-    {
-        // Allow only safe CSS characters: alphanumeric, spaces, hyphens, underscores, percentages, commas, parentheses
-        return preg_replace('/[^a-zA-Z0-9\s\-_%.,()]/i', '', $value) ?? '';
     }
 }

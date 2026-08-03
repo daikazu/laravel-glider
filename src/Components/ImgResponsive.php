@@ -5,15 +5,22 @@ declare(strict_types=1);
 namespace Daikazu\LaravelGlider\Components;
 
 use Daikazu\LaravelGlider\Facades\Glider;
-use Illuminate\Support\Facades\Cache;
+use Daikazu\LaravelGlider\Support\Dimensions;
+use Daikazu\LaravelGlider\Support\FocalPoint;
+use Daikazu\LaravelGlider\Support\GlideAttributes;
+use Daikazu\LaravelGlider\Support\SrcsetCalculator;
+use Illuminate\View\Component;
 
-use function Illuminate\Filesystem\join_paths;
-
-class ImgResponsive extends BaseComponent
+class ImgResponsive extends Component
 {
-    protected string $view = 'glider::components.img-responsive';
-
     private readonly ?array $srcsetWidths;
+
+    /**
+     * @var array{width: int, height: int}|null
+     */
+    private ?array $transformedDimensions = null;
+
+    private bool $transformedDimensionsResolved = false;
 
     public function __construct(
         public string $src,
@@ -27,19 +34,54 @@ class ImgResponsive extends BaseComponent
         }
     }
 
+    public function render()
+    {
+        return view('glider::components.img-responsive');
+    }
+
+    public function src(): string
+    {
+        return Glider::getUrl($this->src, GlideAttributes::from($this->attributes));
+    }
+
+    /**
+     * Natural image width of the delivered (possibly transformed) image.
+     */
+    public function width(): ?int
+    {
+        return $this->transformed()['width'] ?? null;
+    }
+
+    /**
+     * Natural image height of the delivered (possibly transformed) image.
+     */
+    public function height(): ?int
+    {
+        return $this->transformed()['height'] ?? null;
+    }
+
+    /**
+     * Get the object-position CSS value from the focal-point attribute.
+     */
+    public function objectPosition(): ?string
+    {
+        return FocalPoint::parse($this->attributes->get('focal-point'));
+    }
+
     public function srcset(): ?string
     {
+        $widths = app(SrcsetCalculator::class)->widths($this->src, $this->srcsetWidths);
 
-        $widths = $this->getSrcsetWidthsCached();
-
-        if (is_null($widths)) {
+        if ($widths === null) {
             return null;
         }
 
-        return collect($widths)->map(function (int $size): string {
+        $glideAttributes = GlideAttributes::from($this->attributes);
+
+        return collect($widths)->map(function (int $size) use ($glideAttributes): string {
             $url = Glider::getUrl(
                 $this->src,
-                $this->glideAttributes()->merge(['q' => 85, 'fm' => 'webp', 'w' => $size])->toArray()
+                array_merge($glideAttributes, ['q' => 85, 'fm' => 'webp', 'w' => $size])
             );
 
             return "{$url} {$size}w";
@@ -47,112 +89,18 @@ class ImgResponsive extends BaseComponent
     }
 
     /**
-     * Automatically calculate the widths used for the srcset attribute.
+     * @return array{width: int, height: int}|null
      */
-    protected function getSrcsetWidthsFromImg(): ?array
+    private function transformed(): ?array
     {
-        $imagePath = join_paths(config('glider.source'), $this->src);
-        if (! file_exists($imagePath)) {
-            return null;
+        if (! $this->transformedDimensionsResolved) {
+            $this->transformedDimensionsResolved = true;
+            $this->transformedDimensions = app(Dimensions::class)->transformed(
+                $this->src,
+                GlideAttributes::from($this->attributes)
+            );
         }
 
-        $imageInfo = getimagesize($imagePath);
-        if ($imageInfo === false) {
-            return null;
-        }
-
-        $width = $imageInfo[0];
-        $height = $imageInfo[1];
-        $filesize = filesize($imagePath);
-
-        if ($filesize === 0 || $filesize === false) {
-            return null;
-        }
-
-        $srcsetWidths = [$width];
-
-        $ratio = $height / $width;
-        $area = $width * $height;
-
-        $pixelPrice = $filesize / $area;
-
-        while ($filesize *= 0.7) {
-            $newWidth = (int) floor(sqrt(($filesize / $pixelPrice) / $ratio));
-            $srcsetWidths[] = $newWidth;
-            if ($newWidth < 20 || $filesize < 10240) {
-                break;
-            }
-        }
-
-        return $srcsetWidths;
-    }
-
-    /**
-     * Get the widths that should be used for the srcset attribute.
-     */
-    protected function getSrcsetWidths(): ?array
-    {
-        if ($this->srcsetWidths !== null) {
-            $normalized = $this->normalizeWidths($this->srcsetWidths);
-            if ($normalized !== null) {
-                return $normalized;
-            }
-        }
-
-        $calculated = $this->getSrcsetWidthsFromImg();
-        return $this->normalizeWidths($calculated ?? []);
-    }
-
-    /**
-     * Get the widths that should be used for the srcset attribute.
-     */
-    protected function getSrcsetWidthsCached(): ?array
-    {
-        // Create a deterministic cache key that changes when inputs change.
-        // - If custom widths are provided, the key is based on those.
-        // - Otherwise, the key is based on the source image mtime to auto-bust on updates.
-        // - Include config hash to bust cache when config changes
-        $configHash = md5(json_encode([
-            config('glider.defaults'),
-            config('glider.presets'),
-        ]) ?: '');
-
-        if ($this->srcsetWidths !== null) {
-            $key = 'glide:' . sha1($this->src) . ':srcset_widths:custom:' . md5(implode(',', $this->srcsetWidths)) . ':' . $configHash;
-        } else {
-            $imagePath = join_paths(config('glider.source'), $this->src);
-            $mtime = is_file($imagePath) ? (filemtime($imagePath) ?: 0) : 0;
-            $key = 'glide:' . sha1($this->src) . ':srcset_widths:img:' . $mtime . ':' . $configHash;
-        }
-
-        // Return a cached value if present.
-        if (Cache::has($key)) {
-            /** @var ?array $cached */
-            $cached = Cache::get($key);
-            return $cached;
-        }
-
-        // Compute and only cache non-null to avoid permanently caching a "missing" state.
-        $widths = $this->getSrcsetWidths();
-        if ($widths !== null) {
-            Cache::forever($key, $widths);
-        }
-
-        return $widths;
-    }
-
-    /**
-     * Normalize a list of widths: keep positive integers, unique, ascending.
-     */
-    private function normalizeWidths(array $widths): ?array
-    {
-        $filtered = array_values(array_filter(
-            array_unique(array_map('intval', $widths)),
-            static fn (int $w): bool => $w > 0
-        ));
-
-        sort($filtered, SORT_NUMERIC);
-
-        return $filtered === [] ? null : $filtered;
+        return $this->transformedDimensions;
     }
 }
