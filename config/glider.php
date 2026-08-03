@@ -408,4 +408,22 @@ return [
             'xs' => ['w' => 40, 'h' => 25, 'fit' => 'crop', 'q' => 10, 'blur' => 10],
         ],
     ],
+
+    /*
+    |--------------------------------------------------------------------------
+    | Prebuild Scan Paths
+    |--------------------------------------------------------------------------
+    |
+    | The directories the `glider:prebuild` command scans for Blade templates
+    | containing glider component tags (`<x-glider-img>`, `<x-glider-bg>`,
+    | etc.) and `Glider::url()` facade calls, so their image conversions can
+    | be warmed ahead of time.
+    |
+    | Default: [resource_path('views')]
+    |
+    */
+
+    'build' => [
+        'paths' => [resource_path('views')],
+    ],
 ];
