@@ -31,13 +31,13 @@ use League\Flysystem\UnableToWriteFile;
  * matching Flysystem `UnableTo*` exception since remote HTTP sources
  * cannot be written to.
  */
-final class HttpFilesystemAdapter implements FilesystemAdapter
+final readonly class HttpFilesystemAdapter implements FilesystemAdapter
 {
-    private const READ_ONLY_MESSAGE = 'HTTP source is read-only';
+    private const string READ_ONLY_MESSAGE = 'HTTP source is read-only';
 
     public function __construct(
-        private readonly string $baseUrl,
-        private readonly Factory $http,
+        private string $baseUrl,
+        private Factory $http,
     ) {}
 
     public function fileExists(string $path): bool

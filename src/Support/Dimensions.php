@@ -11,9 +11,9 @@ use function Illuminate\Filesystem\join_paths;
  * root, and calculates the dimensions a transformed (Glide) image will
  * have once a set of glide params (w, h, fit, dpr) is applied.
  */
-final class Dimensions
+final readonly class Dimensions
 {
-    public function __construct(private readonly FilesystemResolver $resolver) {}
+    public function __construct(private FilesystemResolver $resolver) {}
 
     /**
      * @return array{width: int, height: int}|null

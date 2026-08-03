@@ -18,15 +18,15 @@ final class TemplateScanner
      * Longest-name-first alternation so `img-responsive` / `bg-responsive`
      * are matched before the shorter `img` / `bg`.
      */
-    private const TAG_PATTERN = '/<x-glider-(img-responsive|img|bg-responsive|bg)\b((?:[^>"\']|"[^"]*"|\'[^\']*\')*?)\/?>/s';
+    private const string TAG_PATTERN = '/<x-glider-(img-responsive|img|bg-responsive|bg)\b((?:[^>"\']|"[^"]*"|\'[^\']*\')*?)\/?>/s';
 
-    private const ATTRIBUTE_PATTERN = '/(?<name>:?[a-zA-Z0-9_-]+)\s*=\s*(?:"(?<dq>[^"]*)"|\'(?<sq>[^\']*)\')/';
+    private const string ATTRIBUTE_PATTERN = '/(?<name>:?[a-zA-Z0-9_-]+)\s*=\s*(?:"(?<dq>[^"]*)"|\'(?<sq>[^\']*)\')/';
 
-    private const FACADE_CALL_PATTERN = '/Glider::url\([^)]*\)/s';
+    private const string FACADE_CALL_PATTERN = '/Glider::url\([^)]*\)/s';
 
-    private const FACADE_LITERAL_PATTERN = '/Glider::url\(\s*[\'"]([^\'"]+)[\'"]\s*(?:,\s*\[(.*?)\])?\s*\)/s';
+    private const string FACADE_LITERAL_PATTERN = '/Glider::url\(\s*[\'"]([^\'"]+)[\'"]\s*(?:,\s*\[(.*?)\])?\s*\)/s';
 
-    private const FACADE_PAIR_PATTERN = '/[\'"](\w+)[\'"]\s*=>\s*[\'"]?([\w.\-]+)[\'"]?/';
+    private const string FACADE_PAIR_PATTERN = '/[\'"](\w+)[\'"]\s*=>\s*[\'"]?([\w.\-]+)[\'"]?/';
 
     /**
      * @param  list<string>  $paths
@@ -37,7 +37,7 @@ final class TemplateScanner
         $usages = [];
         $dynamic = [];
 
-        $existingPaths = array_values(array_filter($paths, static fn (string $path): bool => is_dir($path)));
+        $existingPaths = array_values(array_filter($paths, is_dir(...)));
 
         if ($existingPaths === []) {
             return ['usages' => $usages, 'dynamic' => $dynamic];

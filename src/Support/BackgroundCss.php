@@ -10,9 +10,9 @@ use InvalidArgumentException;
  * Builds responsive background-image URLs and the CSS/media-query
  * rules that reference them.
  */
-final class BackgroundCss
+final readonly class BackgroundCss
 {
-    public function __construct(private readonly UrlGenerator $urls) {}
+    public function __construct(private UrlGenerator $urls) {}
 
     /**
      * Generate responsive background URLs for multiple breakpoints

@@ -113,12 +113,7 @@ final class UrlValidator
         if (filter_var($ip, FILTER_VALIDATE_IP, FILTER_FLAG_NO_PRIV_RANGE | FILTER_FLAG_NO_RES_RANGE) === false) {
             return true;
         }
-
         // Additional check for AWS metadata endpoint
-        if ($ip === '169.254.169.254') {
-            return true;
-        }
-
-        return false;
+        return $ip === '169.254.169.254';
     }
 }

@@ -17,7 +17,7 @@ namespace Daikazu\LaravelGlider\Support;
  */
 final class FocalPoint
 {
-    private const NAMED_POSITIONS = [
+    private const array NAMED_POSITIONS = [
         'center'       => '50% 50%',
         'top'          => '50% 0%',
         'bottom'       => '50% 100%',
@@ -42,7 +42,7 @@ final class FocalPoint
         }
 
         if (str_contains($value, ',')) {
-            $parts = array_map('trim', explode(',', $value));
+            $parts = array_map(trim(...), explode(',', $value));
 
             if (count($parts) === 2) {
                 $x = (int) $parts[0];

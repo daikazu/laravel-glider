@@ -19,12 +19,12 @@ use League\Flysystem\FilesystemOperator;
  * Remote URLs are validated against SSRF (`UrlValidator`) before the
  * HTTP adapter is ever constructed.
  */
-final class SourceResolver
+final readonly class SourceResolver
 {
     public function __construct(
-        private readonly FilesystemResolver $filesystems,
-        private readonly UrlValidator $urls,
-        private readonly Factory $http,
+        private FilesystemResolver $filesystems,
+        private UrlValidator $urls,
+        private Factory $http,
     ) {}
 
     public function filesystemFor(string $path): FilesystemOperator
@@ -75,6 +75,9 @@ final class SourceResolver
 
     private function isUrl(string $path): bool
     {
-        return Str::isUrl($path) || str_contains($path, '://');
+        if (Str::isUrl($path)) {
+            return true;
+        }
+        return str_contains($path, '://');
     }
 }

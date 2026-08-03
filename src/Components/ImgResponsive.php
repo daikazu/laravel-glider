@@ -26,8 +26,8 @@ class ImgResponsive extends Component
         public string $src,
         ?string $srcsetWidths = null,
     ) {
-        if ($srcsetWidths !== null && $srcsetWidths !== '' && $srcsetWidths !== '0') {
-            $parsed = array_values(array_filter(array_map('intval', explode(',', $srcsetWidths)), fn (int $w): bool => $w > 0));
+        if (! in_array($srcsetWidths, [null, '', '0'], true)) {
+            $parsed = array_values(array_filter(array_map(intval(...), explode(',', $srcsetWidths)), fn (int $w): bool => $w > 0));
             $this->srcsetWidths = count($parsed) > 0 ? $parsed : null;
         } else {
             $this->srcsetWidths = null;

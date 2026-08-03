@@ -16,14 +16,14 @@ use League\Flysystem\FilesystemOperator;
  * Composition root for image URL generation. Delegates all real work to
  * its collaborators — this class exists to preserve the public facade API.
  */
-final class Glider
+final readonly class Glider
 {
     public function __construct(
-        private readonly UrlGenerator $urls,
-        private readonly PathCodec $codec,
-        private readonly PathValidator $pathValidator,
-        private readonly SourceResolver $sources,
-        private readonly BackgroundCss $backgroundCss,
+        private UrlGenerator $urls,
+        private PathCodec $codec,
+        private PathValidator $pathValidator,
+        private SourceResolver $sources,
+        private BackgroundCss $backgroundCss,
     ) {}
 
     public function decodeParams(string $string): array

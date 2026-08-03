@@ -8,7 +8,7 @@ use InvalidArgumentException;
 
 use function Illuminate\Filesystem\join_paths;
 
-final class PathValidator
+final readonly class PathValidator
 {
     public function __construct(private ?string $sourceRoot) {}
 

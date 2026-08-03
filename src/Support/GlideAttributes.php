@@ -19,7 +19,7 @@ final class GlideAttributes
     public static function from(ComponentAttributeBag $bag): array
     {
         return collect($bag->whereStartsWith('glide-'))
-            ->mapWithKeys(fn ($item, string $key) => [Str::after($key, 'glide-') => $item])
+            ->mapWithKeys(fn ($item, string $key): array => [Str::after($key, 'glide-') => $item])
             ->toArray();
     }
 }

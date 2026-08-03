@@ -82,7 +82,7 @@ class LaravelGliderServiceProvider extends PackageServiceProvider
             return;
         }
 
-        $cachePath = (string) config('glider.cache');
+        $cachePath = config('glider.cache');
 
         if ($cachePath === '') {
             return;

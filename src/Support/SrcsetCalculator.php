@@ -13,9 +13,9 @@ use function Illuminate\Filesystem\join_paths;
  * attribute: either a caller-supplied custom list, or a list derived from
  * the source image's dimensions and file size.
  */
-final class SrcsetCalculator
+final readonly class SrcsetCalculator
 {
-    public function __construct(private readonly FilesystemResolver $resolver) {}
+    public function __construct(private FilesystemResolver $resolver) {}
 
     /**
      * @param  int[]|null  $custom
@@ -145,7 +145,7 @@ final class SrcsetCalculator
     private function normalizeWidths(array $widths): ?array
     {
         $filtered = array_values(array_filter(
-            array_unique(array_map('intval', $widths)),
+            array_unique(array_map(intval(...), $widths)),
             static fn (int $w): bool => $w > 0
         ));
 

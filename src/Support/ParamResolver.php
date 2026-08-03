@@ -7,9 +7,9 @@ namespace Daikazu\LaravelGlider\Support;
 use Illuminate\Contracts\Container\Container;
 use League\Glide\Server;
 
-final class ParamResolver
+final readonly class ParamResolver
 {
-    public function __construct(private readonly Container $app) {}
+    public function __construct(private Container $app) {}
 
     public function normalize(array $params): array
     {
@@ -18,7 +18,7 @@ final class ParamResolver
         }
 
         unset($params['s'], $params['p']);
-        $params = array_map('strval', $params);
+        $params = array_map(strval(...), $params);
         ksort($params);
 
         return $params;

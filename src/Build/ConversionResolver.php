@@ -26,12 +26,12 @@ use Illuminate\Support\Str;
  * byte-identical to what a live request for the same conversion would
  * produce, by construction, for any current or future param quirk.
  */
-final class ConversionResolver
+final readonly class ConversionResolver
 {
     public function __construct(
-        private readonly Glider $glider,
-        private readonly SrcsetCalculator $srcsetCalculator,
-        private readonly BackgroundBreakpoints $backgroundBreakpoints,
+        private Glider $glider,
+        private SrcsetCalculator $srcsetCalculator,
+        private BackgroundBreakpoints $backgroundBreakpoints,
     ) {}
 
     /**
@@ -198,12 +198,12 @@ final class ConversionResolver
      */
     private function parseSrcsetWidths(?string $raw): ?array
     {
-        if ($raw === null || $raw === '' || $raw === '0') {
+        if (in_array($raw, [null, '', '0'], true)) {
             return null;
         }
 
         $parsed = array_values(array_filter(
-            array_map('intval', explode(',', $raw)),
+            array_map(intval(...), explode(',', $raw)),
             static fn (int $w): bool => $w > 0
         ));
 

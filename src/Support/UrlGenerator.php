@@ -11,13 +11,13 @@ use League\Glide\Signatures\SignatureInterface;
 
 use function Illuminate\Filesystem\join_paths;
 
-final class UrlGenerator
+final readonly class UrlGenerator
 {
     public function __construct(
-        private readonly PathCodec $codec,
-        private readonly ParamResolver $params,
-        private readonly PathValidator $pathValidator,
-        private readonly SignatureInterface $signature,
+        private PathCodec $codec,
+        private ParamResolver $params,
+        private PathValidator $pathValidator,
+        private SignatureInterface $signature,
     ) {}
 
     public function url(string $path, array $params = []): string

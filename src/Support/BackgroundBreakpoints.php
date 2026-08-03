@@ -19,7 +19,7 @@ use InvalidArgumentException;
  */
 final class BackgroundBreakpoints
 {
-    private const BREAKPOINT_WIDTHS = [
+    private const array BREAKPOINT_WIDTHS = [
         'xs'  => 0,
         'sm'  => 576,
         'md'  => 768,
@@ -28,7 +28,7 @@ final class BackgroundBreakpoints
         '2xl' => 1400,
     ];
 
-    private const DEFAULT_BREAKPOINTS = [
+    private const array DEFAULT_BREAKPOINTS = [
         'xs' => ['w' => 480],
         'sm' => ['w' => 768],
         'md' => ['w' => 1024],
@@ -42,7 +42,7 @@ final class BackgroundBreakpoints
      */
     public function expand(?string $preset, ?array $breakpoints, array $glideAttributes): Collection
     {
-        if ($preset !== null && $preset !== '' && $preset !== '0') {
+        if (! in_array($preset, [null, '', '0'], true)) {
             return $this->fromPreset($preset, $glideAttributes);
         }
 

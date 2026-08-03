@@ -88,7 +88,7 @@ class Bg extends Component
      */
     public function getFallbackUrl(): ?string
     {
-        if ($this->fallback === null || $this->fallback === '' || $this->fallback === '0') {
+        if (in_array($this->fallback, [null, '', '0'], true)) {
             return null;
         }
 

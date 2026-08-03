@@ -13,11 +13,11 @@ use League\Glide\Server;
  * requests whose params exactly match a configured preset's expansion
  * are allowed.
  */
-final class PresetPolicy
+final readonly class PresetPolicy
 {
     public function __construct(
-        private readonly ParamResolver $params,
-        private readonly Container $app,
+        private ParamResolver $params,
+        private Container $app,
     ) {}
 
     public function allows(array $requestParams): bool
