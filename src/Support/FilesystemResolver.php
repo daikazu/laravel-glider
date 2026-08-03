@@ -23,7 +23,7 @@ final class FilesystemResolver
     public function resolve(string | array $config): FilesystemOperator
     {
         if (is_string($config)) {
-            return new Filesystem(new LocalFilesystemAdapter($config));
+            return new Filesystem(new LocalFilesystemAdapter($this->absolutePath($config)));
         }
 
         $disk = Storage::disk($config['disk']);
@@ -41,7 +41,7 @@ final class FilesystemResolver
     public function localPath(string | array $config): ?string
     {
         if (is_string($config)) {
-            return $config;
+            return $this->absolutePath($config);
         }
 
         $disk = Storage::disk($config['disk']);
@@ -51,5 +51,19 @@ final class FilesystemResolver
         }
 
         return $disk->path($config['prefix'] ?? '');
+    }
+
+    /**
+     * Relative paths (e.g. GLIDER_CACHE_PATH=public/glider) are anchored to the
+     * application root rather than the process CWD, which differs between
+     * artisan and web requests.
+     */
+    private function absolutePath(string $path): string
+    {
+        if (str_starts_with($path, '/') || preg_match('/^[A-Za-z]:[\\\\\\/]/', $path) === 1) {
+            return $path;
+        }
+
+        return base_path($path);
     }
 }

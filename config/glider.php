@@ -111,10 +111,18 @@ return [
     |   directory auto-creation and .gitignore behavior above only apply to the
     |   plain path form)
     |
+    | Relative path strings (handy in .env, where path helpers aren't available,
+    | e.g. GLIDER_CACHE_PATH=public/img) are resolved from the application root.
+    |
     | This setting is the pivot point for both deployment recipes described under
     | 'source' above: an S3 disk reference here gives every server a shared,
     | pre-warmed cache; a plain local path (e.g. public_path('glider-cache'))
     | lets `glider:build` bake the cache directly into the release artifact.
+    |
+    | Static-serve tip: point the cache at public/{base_url} (default: public/img)
+    | and prebuilt conversions are served directly by the web server as static
+    | files — requests never reach PHP. Anything not prebuilt falls through to
+    | the Laravel route as usual.
     |
     */
 

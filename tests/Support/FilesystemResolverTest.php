@@ -24,3 +24,27 @@ it('returns a local path for path config and local disks, null otherwise', funct
     expect($r->localPath('/tmp/imgs'))->toBe('/tmp/imgs')
         ->and($r->localPath(['disk' => 'assets']))->toBeString();
 });
+
+it('anchors relative string paths to the application base path', function () {
+    $r = new FilesystemResolver;
+    expect($r->localPath('public/glider'))->toBe(base_path('public/glider'));
+});
+
+it('resolves relative string paths independent of the current working directory', function () {
+    $dir = base_path('glider-rel-test');
+    @mkdir($dir, 0755, true);
+    file_put_contents($dir . '/probe.txt', 'found');
+
+    $cwd = getcwd();
+    chdir(sys_get_temp_dir());
+
+    try {
+        $fs = (new FilesystemResolver)->resolve('glider-rel-test');
+        expect($fs->fileExists('probe.txt'))->toBeTrue()
+            ->and($fs->read('probe.txt'))->toBe('found');
+    } finally {
+        chdir((string) $cwd);
+        @unlink($dir . '/probe.txt');
+        @rmdir($dir);
+    }
+});
