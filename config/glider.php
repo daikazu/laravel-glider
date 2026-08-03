@@ -46,6 +46,20 @@ return [
     | - A Laravel storage disk reference, e.g. ['disk' => 's3', 'prefix' => 'images']
     |   ('prefix' is optional and scopes the disk to a subdirectory)
     |
+    | 'source', 'cache', and 'watermarks' below all accept both forms independently,
+    | which supports two common deployment recipes:
+    |
+    | 1. S3 shared cache: 'source' and 'cache' both point at S3 disk references
+    |    (e.g. ['disk' => 's3', 'prefix' => 'glider-cache']). A CI step runs
+    |    `php artisan glider:build` once against the shared bucket; every
+    |    application server then reads from the same warm cache instead of each
+    |    one processing images independently.
+    |
+    | 2. Baked into the release artifact: 'cache' points at a plain local path
+    |    (e.g. public_path('glider-cache')) that is populated by `glider:build`
+    |    during the build step and shipped as part of the deployed artifact, so
+    |    the cache is present on disk the moment the release goes live.
+    |
     */
 
     'source' => env('GLIDER_SOURCE_PATH', resource_path('assets')),
@@ -66,6 +80,10 @@ return [
     | - A plain path string, e.g. resource_path('assets/watermarks')
     | - A Laravel storage disk reference, e.g. ['disk' => 's3', 'prefix' => 'watermarks']
     |   ('prefix' is optional and scopes the disk to a subdirectory)
+    |
+    | Like 'source' and 'cache' above, this can be a disk reference so watermark
+    | assets are available identically under either deployment recipe (S3 shared
+    | cache or baked-into-artifact).
     |
     */
 
@@ -92,6 +110,11 @@ return [
     |   ('prefix' is optional and scopes the disk to a subdirectory; note that the
     |   directory auto-creation and .gitignore behavior above only apply to the
     |   plain path form)
+    |
+    | This setting is the pivot point for both deployment recipes described under
+    | 'source' above: an S3 disk reference here gives every server a shared,
+    | pre-warmed cache; a plain local path (e.g. public_path('glider-cache'))
+    | lets `glider:build` bake the cache directly into the release artifact.
     |
     */
 
@@ -153,18 +176,31 @@ return [
     |    enabled in production.
     |
     | 2. On-the-Fly Kill Switch ('on_the_fly' below): once you've warmed the
-    |    cache for the conversions you actually use (e.g. during a deploy
-    |    step), you can disable on-the-fly generation entirely. Any request
-    |    for a conversion that isn't already cached returns a 404 instead of
-    |    invoking the image processor. This caps your worst-case processing
-    |    load at zero after the cache is primed.
+    |    cache for the conversions you actually use (e.g. by running
+    |    `php artisan glider:build` in CI as part of your deploy pipeline),
+    |    you can disable on-the-fly generation entirely. A request whose
+    |    conversion is already cached is served from cache as normal; a
+    |    request for anything not already cached returns a 404 instead of
+    |    invoking the image processor. Combined with `glider:build` in CI,
+    |    this means production does zero request-time image processing.
     |
     | 3. Presets-Only Mode ('restrict_to_presets' below): restricts allowed
     |    manipulations to the named presets configured in 'presets' above
-    |    (plus defaults-only requests). Any request whose parameters don't
-    |    exactly match a configured preset is rejected with a 403, closing
-    |    off the arbitrary-parameter attack surface even when signed URLs
-    |    are otherwise trusted (e.g. user-supplied or third-party URLs).
+    |    (plus defaults-only requests), collapsing the parameter space down
+    |    to (number of images) x (number of presets). Any request whose
+    |    parameters don't exactly match a configured preset is rejected with
+    |    a 403, closing off the arbitrary-parameter attack surface even when
+    |    signed URLs are otherwise trusted (e.g. user-supplied or third-party
+    |    URLs).
+    |
+    |    IMPORTANT: this mode does not mean "only presets are ever allowed" —
+    |    format-only conversions (the 'fm' parameter, as set implicitly via the
+    |    URL's file extension) are still permitted even when the requested
+    |    params don't match any preset. The parameter space stays finite
+    |    because the route itself whitelists which extensions are accepted
+    |    (jpg, pjpg, png, gif, webp, avif, tiff) — so presets-only mode should
+    |    be described as "images x presets x whitelisted-extensions", not as
+    |    an absolute "presets only" guarantee.
     |
     | These layers compose: you can run signed URLs only, signed + presets-only,
     | on-the-fly disabled after a cache-warming step, or any combination.
@@ -174,8 +210,8 @@ return [
     // Disable to serve only pre-cached conversions; new (uncached) requests 404.
     'on_the_fly' => env('GLIDER_ON_THE_FLY', true),
 
-    // Enable to allow only defaults-only requests or exact preset expansions;
-    // everything else 403s.
+    // Enable to allow only defaults-only requests, exact preset expansions, or
+    // format-only ('fm') conversions; everything else 403s.
     'restrict_to_presets' => env('GLIDER_RESTRICT_TO_PRESETS', false),
 
     /*
@@ -243,6 +279,13 @@ return [
     | Common defaults:
     | - 'fm' => 'webp'     : Convert all images to WebP format for better compression
     | - 'q' => 85          : Set default quality to 85%
+    | - 'strip' => true    : (Glide 4.1+) Strip EXIF/metadata from output images. This
+    |                        removes camera info, GPS coordinates, and other embedded
+    |                        metadata from generated images, which can reduce file size
+    |                        and avoid leaking potentially sensitive data (e.g. GPS
+    |                        location) baked into uploaded originals. Left commented out
+    |                        below — Glide's own default behavior (metadata preserved) is
+    |                        unchanged unless you opt in.
     |
     | Default: ['fm' => 'webp'] - converts all images to WebP format
     |
@@ -251,6 +294,7 @@ return [
     'defaults' => [
         'fm' => env('GLIDER_DEFAULT_FORMAT', 'webp'),
         'q'  => env('GLIDER_DEFAULT_QUALITY', 85),
+        // 'strip' => true, // Uncomment to strip EXIF/metadata from all generated images.
     ],
 
     /*
@@ -411,13 +455,24 @@ return [
 
     /*
     |--------------------------------------------------------------------------
-    | Prebuild Scan Paths
+    | Build (glider:build) Settings
     |--------------------------------------------------------------------------
     |
-    | The directories the `glider:prebuild` command scans for Blade templates
-    | containing glider component tags (`<x-glider-img>`, `<x-glider-bg>`,
-    | etc.) and `Glider::url()` facade calls, so their image conversions can
-    | be warmed ahead of time.
+    | Configuration for the `php artisan glider:build` command, which scans
+    | your Blade templates for statically-discoverable glider usages
+    | (`<x-glider-img>`, `<x-glider-bg>`, and `Glider::url()` facade calls)
+    | and generates their cached conversions ahead of time, so the first real
+    | request for each one is already a cache hit. This is what makes the
+    | on-the-fly kill switch above practical in production: run
+    | `glider:build` as a step in your CI/deploy pipeline, then set
+    | 'on_the_fly' => false so production only ever serves pre-warmed cache
+    | entries (see the Three-Layer Security Model note above `on_the_fly`).
+    |
+    | 'paths': the directories `glider:build` scans for templates. Only
+    | usages with a statically-resolvable `src` (a literal string, not a
+    | variable or expression) can be discovered this way; dynamic usages are
+    | reported as skipped rather than silently ignored. Run with `--dry-run`
+    | to preview what would be generated without writing anything to cache.
     |
     | Default: [resource_path('views')]
     |
