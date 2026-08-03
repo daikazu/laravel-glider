@@ -9,6 +9,7 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Http;
 use League\Flysystem\Filesystem;
 use League\Flysystem\Local\LocalFilesystemAdapter;
+use League\Flysystem\UnableToCheckFileExistence;
 use League\Glide\Filesystem\FileNotFoundException;
 use League\Glide\Filesystem\FilesystemException as GlideFilesystemException;
 use League\Glide\Server;
@@ -251,4 +252,64 @@ it('returns 404 when a remote source fetch fails', function () {
 
     $url = Glider::url('https://example.com/x.jpg', ['w' => 10]);
     $this->get($url)->assertNotFound();
+});
+
+it('returns 400 instead of 500 when the encoded path decodes to a directory traversal payload', function () {
+    // Regression coverage: Glider::decodePath() runs the decoded value
+    // through PathValidator, which throws InvalidArgumentException on a
+    // traversal attempt. That call previously sat outside the controller's
+    // try/catch, so a crafted encoded_path 500'd instead of mapping to 400
+    // like every other invalid-input case.
+    config()->set('glider.secure', false);
+
+    $encodedPath = rtrim(strtr(base64_encode('../secret'), '+/', '-_'), '=');
+    $encodedParams = rtrim(strtr(base64_encode('{}'), '+/', '-_'), '=');
+
+    $url = url(config('glider.base_url') . "/{$encodedPath}/{$encodedParams}.jpg");
+
+    $this->get($url)->assertStatus(400);
+});
+
+it('returns 400 for an invalid fm (format) parameter value', function () {
+    config()->set('glider.secure', false);
+
+    $encodedPath = rtrim(strtr(base64_encode('test-tiny.jpg'), '+/', '-_'), '=');
+    $encodedParams = rtrim(strtr(base64_encode((string) json_encode(['fm' => 'bogus'])), '+/', '-_'), '=');
+
+    $url = url(config('glider.base_url') . "/{$encodedPath}/{$encodedParams}.jpg");
+
+    $this->get($url)->assertStatus(400);
+});
+
+it('returns 404 instead of 500 when cacheFileExists throws under on_the_fly=false', function () {
+    // Regression coverage: cacheFileExists() sat outside the controller's
+    // try/catch, so a flaky/erroring cache disk would surface as an
+    // uncaught 500 instead of the 404 every other Flysystem failure maps to.
+    $controller = new GlideController;
+
+    $encodedPath = 'p3';
+    $encodedParams = 'q3';
+    $extension = 'jpg';
+
+    $decodedPath = 'flaky/image.jpg';
+    $decodedParams = [];
+
+    $filesystem = new Filesystem(new LocalFilesystemAdapter(sys_get_temp_dir()));
+
+    Glider::swap(makeGlideStub($decodedPath, $decodedParams, $filesystem));
+
+    config()->set('glider.on_the_fly', false);
+
+    $server = m::mock(Server::class);
+    $server->shouldReceive('setSource')->once()->with($filesystem);
+    $server->shouldReceive('setCachePathCallable')->once()->with(m::type('callable'));
+    $server->shouldReceive('cacheFileExists')
+        ->once()
+        ->with($decodedPath, ['fm' => $extension])
+        ->andThrow(new UnableToCheckFileExistence('flaky cache disk'));
+
+    $request = Request::create('/');
+
+    expect(fn () => $controller($request, $server, app(PresetPolicy::class), $encodedPath, $encodedParams, $extension))
+        ->toThrow(NotFoundHttpException::class);
 });

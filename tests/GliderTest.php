@@ -2,8 +2,10 @@
 
 declare(strict_types=1);
 
+use Daikazu\LaravelGlider\Facades\Glider as GliderFacade;
 use Daikazu\LaravelGlider\Glider;
 use Daikazu\LaravelGlider\Support\UrlGenerator;
+use Illuminate\Support\Facades\Storage;
 use League\Flysystem\Filesystem;
 
 beforeEach(function () {
@@ -500,6 +502,19 @@ test('preset parameters can be overridden by explicit params', function () {
     // The explicit w=200 should override preset's w=150
     expect($decoded['w'])->toBe('200')
         ->and($decoded['h'])->toBe('150'); // h from preset should remain
+});
+
+test('it generates a glide route url instead of throwing when source is a disk array', function () {
+    // Regression coverage: the direct-serve shortcut's second branch called
+    // Str::startsWith($sourceRoot, storage_path()) without guarding that
+    // $sourceRoot is a string. With a disk-array source (spec-advertised,
+    // e.g. 'source' => ['disk' => 's3']) and a zero-param Glider::url()
+    // call, $sourceRoot is an array and that call TypeErrors instead of
+    // falling through to normal route generation.
+    config()->set('glider.source', ['disk' => 'assets']);
+    Storage::fake('assets');
+
+    expect(GliderFacade::url('a.jpg'))->toContain('/img/');
 });
 
 test('preset parameter is not included in encoded URL params', function () {

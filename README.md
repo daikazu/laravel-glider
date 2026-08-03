@@ -403,6 +403,12 @@ instead of each one processing images independently.
 'cache'  => ['disk' => 's3', 'prefix' => 'glider-cache'],
 ```
 
+> **Note:** a non-local `source` (any disk reference other than the local
+> filesystem) disables automatic `width()`/`height()` attributes and
+> automatic `srcset` width calculation, since both require reading the
+> source image's dimensions from disk. An explicit `srcset-widths` list
+> still works.
+
 **2. Baked into the release artifact** — keep `cache` as a plain local
 path (e.g. `public_path('glider-cache')`), populate it with
 `glider:build` during your build step, and ship it as part of the deployed

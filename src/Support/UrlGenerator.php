@@ -31,12 +31,15 @@ final readonly class UrlGenerator
         $params = $this->params->mapPresetAlias($params);
 
         // Sometimes we can directly serve the image from the public disk
-        // (Only for local paths, not URLs)
-        if ($params === [] && ! Str::isUrl($path)) {
-            $publicRoot = config('filesystems.disks.public.root');
-            $sourceRoot = config('glider.source');
+        // (Only for local paths, not URLs, and only when the source is a
+        // plain path string — a disk-array source, e.g. ['disk' => 's3'],
+        // skips this shortcut entirely and falls through to route generation)
+        $sourceRoot = config('glider.source');
 
-            if (is_string($publicRoot) && is_string($sourceRoot) && Str::startsWith($sourceRoot, $publicRoot)) {
+        if ($params === [] && ! Str::isUrl($path) && is_string($sourceRoot)) {
+            $publicRoot = config('filesystems.disks.public.root');
+
+            if (is_string($publicRoot) && Str::startsWith($sourceRoot, $publicRoot)) {
                 return Storage::disk('public')->url($path);
             }
 

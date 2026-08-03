@@ -132,6 +132,21 @@ it('lists jobs without generating on --dry-run', function () {
     expect(File::exists($this->cacheDir) ? File::allFiles($this->cacheDir) : [])->toBeEmpty();
 });
 
+it('exits with failure on --dry-run when a usage fails to resolve', function () {
+    // Regression coverage: --dry-run always returned SUCCESS even when
+    // resolver failures were printed, so a CI step that only checks the
+    // exit code (rather than parsing output) would never notice a broken
+    // preset referenced from a template.
+    File::put(
+        __DIR__ . '/../fixtures/build-views/bad-preset.blade.php',
+        '<x-glider-bg-responsive src="banner.jpg" preset="does-not-exist" />'
+    );
+
+    $this->artisan('glider:build', ['--dry-run' => true])->assertFailed();
+
+    expect(File::exists($this->cacheDir) ? File::allFiles($this->cacheDir) : [])->toBeEmpty();
+});
+
 it('collects a resolver exception as a failed item instead of aborting the whole command', function () {
     // Important-severity fix: ConversionResolver::jobs() can throw (e.g.
     // BackgroundBreakpoints::expand() on an unknown preset name), and that

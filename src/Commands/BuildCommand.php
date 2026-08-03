@@ -34,7 +34,8 @@ class BuildCommand extends Command
 
         foreach ($paths as $path) {
             if (! is_string($path) || ! is_dir($path)) {
-                $this->warn("Configured build path does not exist, skipping: {$path}");
+                $label = is_string($path) ? $path : (json_encode($path) ?: 'null');
+                $this->warn("Configured build path does not exist, skipping: {$label}");
             }
         }
 
@@ -115,7 +116,7 @@ class BuildCommand extends Command
             }
         }
 
-        return self::SUCCESS;
+        return $resolveFailures === [] ? self::SUCCESS : self::FAILURE;
     }
 
     /**

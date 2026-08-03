@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace Daikazu\LaravelGlider\Http\Controllers;
 
 use Daikazu\LaravelGlider\Facades\Glider;
+use Daikazu\LaravelGlider\Glider as GliderService;
 use Daikazu\LaravelGlider\Security\PresetPolicy;
 use Illuminate\Http\Request;
 use InvalidArgumentException;
@@ -18,7 +19,14 @@ class GlideController
 {
     public function __invoke(Request $request, Server $server, PresetPolicy $presets, string $encodedPath, string $encodedParams, string $extension): Response
     {
-        $path = Glider::decodePath($encodedPath);
+        try {
+            $path = app(GliderService::class)->decodePath($encodedPath);
+        } catch (InvalidArgumentException) {
+            // PathValidator rejects traversal/null-byte payloads by throwing;
+            // that's an invalid request (400), not a server error (500).
+            abort(400);
+        }
+
         abort_if($path === '', 404);
         $params = Glider::decodeParams($encodedParams);
         $params['fm'] ??= $extension;
@@ -29,15 +37,16 @@ class GlideController
         $server->setCachePathCallable(fn (string $p, array $ps = []): string => Glider::getCachePath($p, $ps));
         $imagePath = Glider::getImagePath($path);
 
-        if (! config('glider.on_the_fly', true) && ! $server->cacheFileExists($imagePath, $params)) {
-            abort(404);
-        }
-
         try {
+            if (! config('glider.on_the_fly', true) && ! $server->cacheFileExists($imagePath, $params)) {
+                abort(404);
+            }
+
             return $server->getImageResponse($imagePath, $params);
         } catch (FileNotFoundException | FilesystemException | \League\Flysystem\FilesystemException) {
             // Glide's exceptions cover local misses; Flysystem's interface covers the
             // HTTP adapter's UnableToReadFile on remote fetch failure (spec §8: 404, never 500).
+            // Also covers a flaky cache disk failing cacheFileExists() above.
             throw new NotFoundHttpException;
         } catch (InvalidArgumentException) {
             abort(400);

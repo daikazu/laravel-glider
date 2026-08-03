@@ -10,6 +10,7 @@ use Daikazu\LaravelGlider\Support\PathCodec;
 use Daikazu\LaravelGlider\Support\SourceResolver;
 use Daikazu\LaravelGlider\Support\UrlGenerator;
 use Illuminate\Support\Str;
+use InvalidArgumentException;
 use League\Flysystem\FilesystemOperator;
 
 /**
@@ -31,6 +32,10 @@ final readonly class Glider
         return $this->codec->decodeParams($string);
     }
 
+    /**
+     * @throws InvalidArgumentException if the decoded path fails security
+     *                                  validation (e.g. directory traversal, null bytes).
+     */
     public function decodePath(string $string): string
     {
         $decoded = $this->codec->decode($string);
