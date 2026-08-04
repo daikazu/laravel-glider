@@ -88,3 +88,25 @@ it('renders x-glider-bg-responsive from a background preset', function () {
 
     expect($html)->toContain('@media (min-width: 768px)');
 });
+
+it('renders an explicit sizes attribute and skips the onload sizes script', function () {
+    $html = Blade::render('<x-glider-img-responsive src="test-tiny.jpg" srcset-widths="5,10" sizes="(min-width: 768px) 50vw, 100vw" />');
+
+    expect($html)->toContain('sizes="(min-width: 768px) 50vw, 100vw"')
+        ->not->toContain('onload=');
+});
+
+it('defaults sizes to auto for lazy-loaded responsive images', function () {
+    $html = Blade::render('<x-glider-img-responsive src="test-tiny.jpg" srcset-widths="5,10" loading="lazy" />');
+
+    expect($html)->toContain('sizes="auto"')
+        ->toContain('loading="lazy"')
+        ->not->toContain('onload=');
+});
+
+it('keeps the onload sizes bootstrap when no sizes information is available', function () {
+    $html = Blade::render('<x-glider-img-responsive src="test-tiny.jpg" srcset-widths="5,10" />');
+
+    expect($html)->toContain('onload=')
+        ->not->toContain('sizes="');
+});

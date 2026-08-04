@@ -241,6 +241,11 @@ Responsive image with automatic srcset generation.
 - `srcset-widths` - Comma-separated list of widths to generate (e.g.
   `"400,800,1200"`); when omitted, widths are calculated automatically
   from the source image's dimensions and file size
+- `sizes` - The standard `sizes` attribute (e.g.
+  `"(min-width: 768px) 50vw, 100vw"`), so the browser picks the right
+  srcset candidate on the very first fetch. When omitted: lazy-loaded
+  images (`loading="lazy"`) get `sizes="auto"`, and eager images fall back
+  to a small `onload` script that back-fills `sizes` after first paint
 - Generates multiple sizes for different viewports
 
 ### `<x-glider-bg>`

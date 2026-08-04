@@ -25,6 +25,7 @@ class ImgResponsive extends Component
     public function __construct(
         public string $src,
         ?string $srcsetWidths = null,
+        public ?string $sizes = null,
     ) {
         if (! in_array($srcsetWidths, [null, '', '0'], true)) {
             $parsed = array_values(array_filter(array_map(intval(...), explode(',', $srcsetWidths)), fn (int $w): bool => $w > 0));
@@ -32,6 +33,21 @@ class ImgResponsive extends Component
         } else {
             $this->srcsetWidths = null;
         }
+    }
+
+    /**
+     * The sizes attribute to render, if any: an explicit `sizes` prop wins;
+     * lazy-loaded images default to `sizes="auto"` (the browser derives the
+     * slot width from layout); otherwise null — the onload script then
+     * back-fills sizes after first paint.
+     */
+    public function sizesAttribute(): ?string
+    {
+        if ($this->sizes !== null && $this->sizes !== '') {
+            return $this->sizes;
+        }
+
+        return $this->attributes->get('loading') === 'lazy' ? 'auto' : null;
     }
 
     public function render()
