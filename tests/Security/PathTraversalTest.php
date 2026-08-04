@@ -59,6 +59,11 @@ describe('Path Traversal Security', function () {
     });
 
     it('allows nested folder paths', function () {
+        // Anchor the source to a directory that always exists — the skeleton
+        // default (resources/assets) is only present when another test
+        // happened to create it first, which made this order-dependent.
+        config(['glider.source' => __DIR__ . '/../fixtures']);
+
         $service = app(Glider::class);
 
         $url = $service->getUrl('uploads/2024/01/image.jpg');
