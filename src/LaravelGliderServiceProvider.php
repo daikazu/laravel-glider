@@ -74,28 +74,31 @@ class LaravelGliderServiceProvider extends PackageServiceProvider
     }
 
     /**
-     * Ensure the cache directory exists and has a .gitignore file
+     * Ensure a local cache directory exists. Caches outside public_path get a
+     * .gitignore so runtime artifacts stay out of version control; a cache
+     * under public_path is deliberately web-served (and often committed or
+     * shipped in the release artifact), so it is left visible to git.
      */
     protected function ensureCacheDirectoryExists(): void
     {
-        if (! is_string(config('glider.cache'))) {
+        $cache = config('glider.cache');
+
+        if (! is_string($cache) || $cache === '') {
             return;
         }
 
-        $cachePath = config('glider.cache');
-
-        if ($cachePath === '') {
-            return;
-        }
+        $cachePath = app(FilesystemResolver::class)->localPath($cache);
 
         $filesystem = app('files');
 
-        // Create the cache directory if it doesn't exist
         if (! $filesystem->isDirectory($cachePath)) {
             $filesystem->makeDirectory($cachePath, 0755, true);
         }
 
-        // Add .gitignore to prevent committing cached images
+        if (str_starts_with((string) $cachePath, public_path())) {
+            return;
+        }
+
         $gitignorePath = $cachePath . '/.gitignore';
         if (! $filesystem->exists($gitignorePath)) {
             $filesystem->put($gitignorePath, "*\n!.gitignore\n");
