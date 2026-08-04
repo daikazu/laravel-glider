@@ -77,6 +77,23 @@ it('clears only the --cache-path target, leaving the configured cache alone', fu
     File::deleteDirectory($runtime);
 });
 
+it('sweeps leftover empty group folders even when no files remain', function () {
+    $dir = sys_get_temp_dir() . '/glider-clear-empty-dirs-test';
+    File::deleteDirectory($dir);
+    File::ensureDirectoryExists($dir . '/aW1n');
+    File::ensureDirectoryExists($dir . '/b2xk/deep');
+
+    config()->set('glider.cache', $dir);
+
+    $this->artisan('glider:clear', ['--force' => true])->assertSuccessful();
+
+    expect(File::isDirectory($dir . '/aW1n'))->toBeFalse()
+        ->and(File::isDirectory($dir . '/b2xk'))->toBeFalse()
+        ->and(File::isDirectory($dir))->toBeTrue();
+
+    File::deleteDirectory($dir);
+});
+
 it('anchors a relative cache path to the application root when clearing', function () {
     $dir = base_path('glider-clear-rel-test');
     File::deleteDirectory($dir);

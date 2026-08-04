@@ -68,6 +68,8 @@ class ClearGlideCacheCommand extends Command
         $this->line("<fg=bright-blue>──────────────────────────────────────────────</>\n");
 
         if ($totalFiles === 0) {
+            // Still sweep folders a previous or interrupted run left behind.
+            $this->removeEmptyDirectories($filesystem);
             $this->line('<fg=green>✨ Nothing to delete. Your cache is already empty.</>');
 
             return self::SUCCESS;
