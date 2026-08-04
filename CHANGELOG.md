@@ -2,6 +2,37 @@
 
 All notable changes to `laravel-glider` will be documented in this file.
 
+## v4.0.0 - 2026-08-04
+
+See [UPGRADE.md](UPGRADE.md) for a full v3 → v4 migration guide.
+
+### ⚠️ Breaking Changes
+
+- **Requirements raised**: now requires PHP ^8.3, Laravel 13 only (`illuminate/contracts` ^13.0; Laravel 11 and 12 are no longer supported), and `league/glide` ^4.1 (pulls in Intervention Image v4).
+- **Human-readable image URLs**: the fully base64-encoded URL format (`/img/{b64 path}/{b64 params}.ext`) is replaced by `/img/{dirs...}/{name}~{token}.{ext}` — the source path and filename stay visible (image SEO, debuggability), URLs are ~30% shorter, and cached files get readable names on disk. Previously issued v3 URLs no longer resolve; clear your cache after upgrading and see UPGRADE.md for external-URL guidance.
+- **Config file renamed**: `config/laravel-glider.php` → `config/glider.php`; every key moved from `laravel-glider.*` to `glider.*`. Re-publish with `php artisan vendor:publish --tag="glider-config"`.
+- **Environment variables renamed**: every `GLIDE_*` variable is now `GLIDER_*` (full mapping in UPGRADE.md).
+- **Blade components renamed**: `<x-glide-img>` → `<x-glider-img>`, `<x-glide-img-responsive>` → `<x-glider-img-responsive>`, `<x-glide-bg>` → `<x-glider-bg>`, `<x-glide-bg-responsive>` → `<x-glider-bg-responsive>`. The `glide-*` attribute prefix for manipulation params (e.g. `glide-w`) is unchanged.
+- **`focal-point` attribute renamed to `focus`** on all four components.
+- **Background component DOM output changed**: `<x-glider-bg>` renders an inline `style` on its container instead of a `<style>` block and generated class; `<x-glider-bg-responsive>`'s generated class prefix changed `.glide-bg-*` → `.glider-bg-*`; container data attributes renamed `data-glide-bg`/`data-glide-src` → `data-glider-bg="true"`/`data-glider-src`. The lazy-loading contract (`data-bg-lazy`/`data-bg-src`/`data-bg-srcset`) is unchanged.
+- **Facade renamed**: `Daikazu\LaravelGlider\Facades\Glide` → `Daikazu\LaravelGlider\Facades\Glider`.
+- **Route name renamed**: `glide` → `glider`.
+- **Command renamed**: `glider:convert-img-tags` → `glider:convert`.
+- **`ntzrbtr/flysystem-http` removed** as a dependency. Remote URL sources continue to work — v4 ships a first-party, read-only HTTP filesystem adapter built on Laravel's HTTP client. No user action required.
+- Internals dissolved `GlideService`/`BaseComponent` into a composition-based architecture (`Glider` root class plus `Support/*`, `Security/*`, and `Build/*` collaborators). No public API impact beyond the renames above.
+
+### ✨ New Features
+
+- **`glider:build` command**: scans Blade templates (configurable via `glider.build.paths`) for statically-resolvable `<x-glider-*>` / `Glider::url()` usages and prebuilds their cache entries — byte-identical to what live requests generate — with live progress output. Supports `--dry-run` and `--static` (bake into `public/{base_url}` for web-server static serving). Dynamic `src` usages are reported and stay on-the-fly.
+- **Disk-based storage**: `source`, `cache`, and `watermarks` accept a Laravel disk reference (`['disk' => 's3', 'prefix' => 'glider']`) or a path; env-expressible via `GLIDER_*_DISK`/`GLIDER_*_PREFIX`, and relative env paths resolve from the application root. Three documented deployment recipes: single server, shared cloud cache (Laravel Cloud/ephemeral infra), and hybrid baked-static + shared-dynamic.
+- **Layered security**: signed URLs (default on) plus two new opt-in layers — `restrict_to_presets` (`GLIDER_RESTRICT_TO_PRESETS`, 403 for non-preset params) and an `on_the_fly` kill switch (`GLIDER_ON_THE_FLY`, cache misses 404 instead of processing). Signature verification is now a single request-time gate.
+- **`sizes` prop on `<x-glider-img-responsive>`**: explicit `sizes` renders directly; lazy-loaded images default to `sizes="auto"`; the onload back-fill script remains only for the eager, no-sizes case. srcset `q`/`fm` are now defaults the user's `glide-q`/`glide-fm` override, and an explicit `fm` is no longer clobbered by the config default format.
+- **`glider:clear` improvements**: handles disk-based caches, accepts `--static` to clear the baked tier independently, and sweeps empty per-image group folders.
+- **`glider:convert` rewritten**: only converts statically-resolvable `src` attributes (plain paths and literal `asset()` calls); dynamic sources are left untouched; attributes survive with order, names, and quoting intact; `--image-path` prefix matching is slash-normalized.
+- **`artisan about` section**: version, driver, base URL, source/cache locations, and the three security-layer states.
+- **`strip` EXIF parameter** (via League/Glide 4.1): documented in the published config, disabled by default.
+- Consistent error mapping across the request pipeline: invalid parameters → 400, preset-policy violations → 403, missing/unfetchable images → 404 (never 500).
+
 ## Unreleased (v4.0.0)
 
 See [UPGRADE.md](UPGRADE.md) for a full v3 → v4 migration guide.
@@ -184,7 +215,6 @@ Features:
 - Configuration Guide: Detailed configuration documentation
 🛠️ Improvements
 Performance
-
 - Better caching strategies
 - Optimized URL generation
 - Reduced memory usage for large image sets
