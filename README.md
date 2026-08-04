@@ -27,16 +27,9 @@ On-the-fly image manipulation for Laravel using [League/Glide](https://glide.the
 
 ## Installation
 
-> **Requires Laravel 13+ and PHP 8.3+.** On Laravel 11 or 12, install the
-> previous major version instead — it stays available on the 3.x release
-> line:
->
-> ```bash
-> composer require daikazu/laravel-glider:^3.0
-> ```
->
-> See the [version compatibility](#requirements) table below, and
-> [UPGRADE.md](UPGRADE.md) when you're ready to move to v4.
+> **Requires Laravel 13+ and PHP 8.3+.** Older Laravel versions can use the
+> previous major version of this package, which is no longer developed.
+> See [UPGRADE.md](UPGRADE.md) when you're ready to move to v4.
 
 ```bash
 composer require daikazu/laravel-glider
@@ -594,17 +587,6 @@ env values and where `glider:build` runs.
 - Laravel 13.x
 - GD or Imagick extension
 - League/Glide 4.1+
-
-**Version compatibility:**
-
-| Glider | Laravel | PHP |
-|---|---|---|
-| 4.x | 13.x | 8.3+ |
-| 3.x | 11.x – 12.x | 8.3+ |
-
-Only the latest major version receives new features; 3.x receives no
-further development, so plan to upgrade alongside your Laravel 13 move
-(see [UPGRADE.md](UPGRADE.md)).
 
 ## Security
 
