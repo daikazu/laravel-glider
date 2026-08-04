@@ -54,6 +54,23 @@ final class FilesystemResolver
     }
 
     /**
+     * Human-readable label for a filesystem config value, for CLI output
+     * (`glider:clear`, `artisan about`).
+     *
+     * @param  string|array{disk: string, prefix?: string}  $config
+     */
+    public function describe(string | array $config): string
+    {
+        if (is_string($config)) {
+            return $this->absolutePath($config);
+        }
+
+        $prefix = $config['prefix'] ?? '';
+
+        return sprintf("disk '%s'%s", $config['disk'], $prefix !== '' ? " (prefix '{$prefix}')" : '');
+    }
+
+    /**
      * Relative paths (e.g. GLIDER_CACHE_PATH=public/glider) are anchored to the
      * application root rather than the process CWD, which differs between
      * artisan and web requests.

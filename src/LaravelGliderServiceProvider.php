@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace Daikazu\LaravelGlider;
 
+use Composer\InstalledVersions;
 use Daikazu\LaravelGlider\Commands\BuildCommand;
 use Daikazu\LaravelGlider\Commands\ClearGlideCacheCommand;
 use Daikazu\LaravelGlider\Commands\ConvertImageTagsToGliderCommand;
@@ -15,6 +16,7 @@ use Daikazu\LaravelGlider\Factories\ResponseFactory;
 use Daikazu\LaravelGlider\Security\PathValidator;
 use Daikazu\LaravelGlider\Support\FilesystemResolver;
 use Illuminate\Contracts\Foundation\Application;
+use Illuminate\Foundation\Console\AboutCommand;
 use League\Glide\Server;
 use League\Glide\ServerFactory;
 use League\Glide\Signatures\SignatureFactory;
@@ -63,6 +65,29 @@ class LaravelGliderServiceProvider extends PackageServiceProvider
         });
 
         $this->ensureCacheDirectoryExists();
+        $this->registerAboutCommand();
+    }
+
+    protected function registerAboutCommand(): void
+    {
+        AboutCommand::add('Glider', fn (): array => [
+            'Version' => InstalledVersions::getPrettyVersion('daikazu/laravel-glider') ?? 'unknown',
+            'Driver'  => (string) config('glider.driver'),
+            'Source'  => app(FilesystemResolver::class)->describe(config('glider.source')),
+            'Cache'   => app(FilesystemResolver::class)->describe(config('glider.cache')),
+
+            'Signed URLs' => config('glider.secure', true)
+                ? '<fg=green;options=bold>ENABLED</>'
+                : '<fg=red;options=bold>DISABLED</>',
+
+            'On-the-fly' => config('glider.on_the_fly', true)
+                ? '<fg=green;options=bold>ENABLED</>'
+                : '<fg=yellow;options=bold>DISABLED</>',
+
+            'Presets Only' => config('glider.restrict_to_presets', false)
+                ? '<fg=green;options=bold>ENABLED</>'
+                : '<fg=yellow;options=bold>DISABLED</>',
+        ]);
     }
 
     /**

@@ -41,9 +41,7 @@ class ClearGlideCacheCommand extends Command
         }
 
         /** @var string|array{disk: string, prefix?: string} $cacheConfig */
-        $label = is_string($cacheConfig)
-            ? (string) $resolver->localPath($cacheConfig)
-            : sprintf("disk '%s'%s", $cacheConfig['disk'], isset($cacheConfig['prefix']) && $cacheConfig['prefix'] !== '' ? " (prefix '{$cacheConfig['prefix']}')" : '');
+        $label = $resolver->describe($cacheConfig);
 
         if (! $this->option('force') && app()->environment('production') && ! $this->confirm("You are in production. This will delete all cached images in:\n{$label}\nDo you wish to continue?")) {
             $this->info('Operation cancelled.');
