@@ -79,7 +79,8 @@ final readonly class ConversionResolver
 
         if ($widths !== null) {
             foreach ($widths as $width) {
-                $candidates[] = array_merge($base, ['q' => 85, 'fm' => 'webp', 'w' => $width]);
+                // Defaults-then-user order mirrors ImgResponsive::srcset()
+                $candidates[] = array_merge(['q' => 85, 'fm' => 'webp'], $base, ['w' => $width]);
             }
         }
 

@@ -79,9 +79,12 @@ class ImgResponsive extends Component
         $glideAttributes = GlideAttributes::from($this->attributes);
 
         return collect($widths)->map(function (int $size) use ($glideAttributes): string {
+            // q/fm are srcset defaults the user's glide-q/glide-fm override;
+            // the width always comes from the srcset entry. Mirrored by
+            // ConversionResolver::imgResponsiveCandidates().
             $url = Glider::getUrl(
                 $this->src,
-                array_merge($glideAttributes, ['q' => 85, 'fm' => 'webp', 'w' => $size])
+                array_merge(['q' => 85, 'fm' => 'webp'], $glideAttributes, ['w' => $size])
             );
 
             return "{$url} {$size}w";

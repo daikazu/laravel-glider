@@ -228,3 +228,19 @@ it('returns null object-position when no focal-point attribute is present', func
     $component = createImgResponsive('test.jpg');
     expect($component->objectPosition())->toBeNull();
 });
+
+it('lets glide-q and glide-fm override the srcset defaults', function () {
+    config()->set('glider.source', __DIR__ . '/../fixtures');
+    config()->set('glider.secure', false);
+
+    $component = new Daikazu\LaravelGlider\Components\ImgResponsive('test-tiny.jpg', '10');
+    $component->attributes = new Illuminate\View\ComponentAttributeBag(['glide-q' => '50', 'glide-fm' => 'png']);
+
+    $srcset = $component->srcset();
+    $parsed = app(Daikazu\LaravelGlider\Support\UrlGenerator::class)->parseUrl(explode(' ', (string) $srcset)[0]);
+    $params = $parsed['params'];
+    $params['fm'] ??= $parsed['extension'];
+
+    expect($params['q'])->toBe('50')
+        ->and($params['fm'])->toBe('png');
+});

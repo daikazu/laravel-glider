@@ -123,3 +123,20 @@ it('resolves a usage whose src would be served directly (no manipulation) to no 
 
     expect($jobs)->toBe([]);
 });
+
+it('mirrors srcset q/fm overrides in img-responsive build candidates', function () {
+    // ImgResponsive::srcset() treats q=85/fm=webp as DEFAULTS that the
+    // user's glide-q/glide-fm override — the build resolver must mirror
+    // that exactly or the cache-equivalence invariant breaks.
+    config()->set('glider.source', __DIR__ . '/../fixtures');
+
+    $jobs = app(Daikazu\LaravelGlider\Build\ConversionResolver::class)->jobs(
+        new Daikazu\LaravelGlider\Build\BladeUsage('img-responsive', 'test-tiny.jpg', ['glide-q' => '50', 'glide-fm' => 'png', 'srcset-widths' => '10'], 'a.blade.php')
+    );
+
+    $widthJob = collect($jobs)->first(fn (array $job): bool => ($job['params']['w'] ?? null) === '10');
+
+    expect($widthJob)->not->toBeNull()
+        ->and($widthJob['params']['q'])->toBe('50')
+        ->and($widthJob['params']['fm'])->toBe('png');
+});
