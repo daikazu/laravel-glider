@@ -291,8 +291,24 @@ See [full Glide documentation](https://glide.thephpleague.com/) for all paramete
 
 **Clear image cache:**
 ```bash
+# Clear the configured cache — works for plain paths and disk references
+# (e.g. an S3 cache) alike, and sweeps the empty per-image group folders
+# left behind by `group_cache_in_folders`
 php artisan glider:clear
+
+# Clear a specific target instead of the configured cache — e.g. the baked
+# tier from `glider:build --cache-path` — leaving the runtime cache untouched
+php artisan glider:clear --cache-path=public/img
+
+# Skip the confirmation prompt in production
+php artisan glider:clear --force
 ```
+
+Cached conversions are byte-identical whether they came from `glider:build`
+or an on-the-fly request, so within a single cache store there is no
+"prebuilt only" filter — but since the baked tier and the runtime cache are
+separate stores in the hybrid recipe, `--cache-path` lets you clear either
+one independently.
 
 **Prebuild all statically discoverable image conversions:**
 ```bash
