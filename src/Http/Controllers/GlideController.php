@@ -4,8 +4,11 @@ declare(strict_types=1);
 
 namespace Daikazu\LaravelGlider\Http\Controllers;
 
-use Daikazu\LaravelGlider\Facades\Glide;
+use Daikazu\LaravelGlider\Facades\Glider;
+use Daikazu\LaravelGlider\Glider as GliderService;
+use Daikazu\LaravelGlider\Security\PresetPolicy;
 use Illuminate\Http\Request;
+use InvalidArgumentException;
 use League\Glide\Filesystem\FileNotFoundException;
 use League\Glide\Filesystem\FilesystemException;
 use League\Glide\Server;
@@ -14,23 +17,41 @@ use Symfony\Component\HttpKernel\Exception\NotFoundHttpException;
 
 class GlideController
 {
-    public function __invoke(Request $request, Server $server, string $encodedPath, string $encodedParams, string $extension): Response
+    public function __invoke(Request $request, Server $server, PresetPolicy $presets, string $path): Response
     {
-        $path = Glide::decodePath($encodedPath);
-        $params = Glide::decodeParams($encodedParams);
-        $params['fm'] ??= $extension;
-        $sourceFilesystem = Glide::getSourceFilesystem($path);
+        try {
+            $parsed = app(GliderService::class)->parsePath($path);
+        } catch (InvalidArgumentException) {
+            // PathValidator rejects traversal/null-byte payloads by throwing;
+            // that's an invalid request (400), not a server error (500).
+            abort(400);
+        }
 
-        $server->setSource($sourceFilesystem);
-        $server->setCachePathCallable(fn (string $path, array $params = []): string => Glide::getCachePath($path, $params));
+        abort_if($parsed === null, 404);
 
-        // For HTTP sources, extract just the filename since the adapter has the base URL
-        $imagePath = Glide::getImagePath($path);
+        $path = $parsed['path'];
+        $params = $parsed['params'];
+        $params['fm'] ??= $parsed['extension'];
+
+        abort_if(config('glider.restrict_to_presets') && ! $presets->allows($params), 403);
+
+        $server->setSource(Glider::getSourceFilesystem($path));
+        $server->setCachePathCallable(fn (string $p, array $ps = []): string => Glider::getCachePath($p, $ps));
+        $imagePath = Glider::getImagePath($path);
 
         try {
+            if (! config('glider.on_the_fly', true) && ! $server->cacheFileExists($imagePath, $params)) {
+                abort(404);
+            }
+
             return $server->getImageResponse($imagePath, $params);
-        } catch (FileNotFoundException | FilesystemException) {
+        } catch (FileNotFoundException | FilesystemException | \League\Flysystem\FilesystemException) {
+            // Glide's exceptions cover local misses; Flysystem's interface covers the
+            // HTTP adapter's UnableToReadFile on remote fetch failure (spec §8: 404, never 500).
+            // Also covers a flaky cache disk failing cacheFileExists() above.
             throw new NotFoundHttpException;
+        } catch (InvalidArgumentException) {
+            abort(400);
         }
     }
 }

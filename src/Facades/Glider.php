@@ -4,17 +4,16 @@ declare(strict_types=1);
 
 namespace Daikazu\LaravelGlider\Facades;
 
-use Daikazu\LaravelGlider\GlideService;
 use Illuminate\Support\Facades\Facade;
-use League\Flysystem\Filesystem;
+use League\Flysystem\FilesystemOperator;
 
 /**
- * @see GlideService
+ * @see \Daikazu\LaravelGlider\Glider
  *
  * @method static string decodePath(string $string)
  * @method static array decodeParams(string $string)
  * @method static string getCachePath(string $path, array $params = [])
- * @method static Filesystem getSourceFilesystem(string $path)
+ * @method static FilesystemOperator getSourceFilesystem(string $path)
  * @method static string getImagePath(string $path)
  * @method static string getUrl(string $path, array $params = [])
  * @method static string url(string $path, array $params = [])
@@ -22,10 +21,10 @@ use League\Flysystem\Filesystem;
  * @method static array getBackgroundPreset(string $presetName)
  * @method static string generateBackgroundCSS(string $path, array $breakpoints, string $selector, array $options = [])
  */
-class Glide extends Facade
+class Glider extends Facade
 {
     protected static function getFacadeAccessor(): string
     {
-        return GlideService::class;
+        return \Daikazu\LaravelGlider\Glider::class;
     }
 }

@@ -2,46 +2,46 @@
 
 declare(strict_types=1);
 
-use Daikazu\LaravelGlider\GlideService;
+use Daikazu\LaravelGlider\Glider;
 
 describe('Path Traversal Security', function () {
     it('blocks directory traversal with forward slash sequences', function () {
-        $service = new GlideService;
+        $service = app(Glider::class);
 
         expect(fn () => $service->getUrl('../../etc/passwd'))
             ->toThrow(InvalidArgumentException::class, 'directory traversal');
     });
 
     it('blocks directory traversal with backslash sequences', function () {
-        $service = new GlideService;
+        $service = app(Glider::class);
 
         expect(fn () => $service->getUrl('images\..\..\config\database.php'))
             ->toThrow(InvalidArgumentException::class, 'directory traversal');
     });
 
     it('blocks directory traversal with mixed sequences', function () {
-        $service = new GlideService;
+        $service = app(Glider::class);
 
         expect(fn () => $service->getUrl('images/../../../etc/passwd'))
             ->toThrow(InvalidArgumentException::class, 'directory traversal');
     });
 
     it('blocks null byte injection', function () {
-        $service = new GlideService;
+        $service = app(Glider::class);
 
         expect(fn () => $service->getUrl("test.jpg\0"))
             ->toThrow(InvalidArgumentException::class, 'null byte');
     });
 
     it('blocks null byte with path traversal', function () {
-        $service = new GlideService;
+        $service = app(Glider::class);
 
         expect(fn () => $service->getUrl("../../../etc/passwd\0.jpg"))
             ->toThrow(InvalidArgumentException::class);
     });
 
     it('allows valid image paths', function () {
-        $service = new GlideService;
+        $service = app(Glider::class);
 
         // These should not throw exceptions
         $url = $service->getUrl('images/test.jpg');
@@ -52,21 +52,26 @@ describe('Path Traversal Security', function () {
     });
 
     it('allows paths with hyphens and underscores', function () {
-        $service = new GlideService;
+        $service = app(Glider::class);
 
         $url = $service->getUrl('images/test-image_01.jpg');
         expect($url)->toBeString();
     });
 
     it('allows nested folder paths', function () {
-        $service = new GlideService;
+        // Anchor the source to a directory that always exists — the skeleton
+        // default (resources/assets) is only present when another test
+        // happened to create it first, which made this order-dependent.
+        config(['glider.source' => __DIR__ . '/../fixtures']);
+
+        $service = app(Glider::class);
 
         $url = $service->getUrl('uploads/2024/01/image.jpg');
         expect($url)->toBeString();
     });
 
     it('blocks path that goes outside source directory', function () {
-        $service = new GlideService;
+        $service = app(Glider::class);
 
         // Try to access a file outside the source directory
         expect(fn () => $service->getUrl('../outside.jpg'))
@@ -74,7 +79,7 @@ describe('Path Traversal Security', function () {
     });
 
     it('handles URL paths without validation', function () {
-        $service = new GlideService;
+        $service = app(Glider::class);
 
         // URL paths should not be validated for traversal (they're remote)
         $url = $service->getUrl('https://example.com/image.jpg');
@@ -82,7 +87,7 @@ describe('Path Traversal Security', function () {
     });
 
     it('decodes and validates paths safely', function () {
-        $service = new GlideService;
+        $service = app(Glider::class);
 
         // Try to encode a malicious path and then decode it
         try {
@@ -95,7 +100,7 @@ describe('Path Traversal Security', function () {
     });
 
     it('prevents symlink attacks', function () {
-        $service = new GlideService;
+        $service = app(Glider::class);
 
         // This test assumes symlinks would be resolved by realpath()
         // and blocked if they point outside the source directory
@@ -111,31 +116,40 @@ describe('Path Traversal Security', function () {
         }
     });
 
-    it('validates paths after decoding from base64', function () {
-        $service = new GlideService;
+    it('validates parsed source paths from crafted url paths', function () {
+        $service = app(Glider::class);
 
-        // Create a malicious path
-        $maliciousPath = '../../etc/passwd';
-        $encoded = rtrim(strtr(base64_encode($maliciousPath), '+/', '-_'), '=');
+        // A crafted relative URL path whose parsed source resolves to a
+        // traversal payload: dirs '../..', name 'passwd', se from the token
+        $token = rtrim(strtr(base64_encode(http_build_query(['se' => 'jpg', 'w' => '10'])), '+/', '-_'), '=');
 
-        // Try to decode it
-        expect(fn () => $service->decodePath($encoded))
+        expect(fn () => $service->parsePath("../../etc/passwd~{$token}.jpg"))
             ->toThrow(InvalidArgumentException::class, 'directory traversal');
     });
 
-    it('allows valid paths after decoding', function () {
+    it('allows valid paths when parsing crafted url paths', function () {
         // Ensure the configured source directory exists for realpath() validation
-        $sourcePath = config('laravel-glider.source');
+        $sourcePath = config('glider.source');
         if (! is_dir($sourcePath)) {
             mkdir($sourcePath, 0755, true);
         }
 
-        $service = new GlideService;
+        $service = app(Glider::class);
 
-        $validPath = 'images/test.jpg';
-        $encoded = rtrim(strtr(base64_encode($validPath), '+/', '-_'), '=');
+        $token = rtrim(strtr(base64_encode(http_build_query(['se' => 'jpg', 'w' => '10'])), '+/', '-_'), '=');
+        $parsed = $service->parsePath("images/test~{$token}.jpg");
 
-        $decoded = $service->decodePath($encoded);
-        expect($decoded)->toBe($validPath);
+        expect($parsed)->not->toBeNull()
+            ->and($parsed['path'])->toBe('images/test.jpg');
+    });
+
+    it('rejects traversal smuggled through the source-extension token key', function () {
+        $service = app(Glider::class);
+
+        // `se` reconstructs the source filename — a crafted token must not
+        // be able to smuggle traversal or separators through it
+        $token = rtrim(strtr(base64_encode('se=jpg%2F..%2F..%2Fsecret&w=10'), '+/', '-_'), '=');
+
+        expect($service->parsePath("images/test~{$token}.jpg"))->toBeNull();
     });
 });

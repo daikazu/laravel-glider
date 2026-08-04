@@ -4,6 +4,7 @@ namespace Daikazu\LaravelGlider\Tests;
 
 use Daikazu\LaravelGlider\LaravelGliderServiceProvider;
 use Illuminate\Database\Eloquent\Factories\Factory;
+use Illuminate\Testing\TestResponse;
 use Orchestra\Testbench\TestCase as Orchestra;
 
 class TestCase extends Orchestra
@@ -14,13 +15,21 @@ class TestCase extends Orchestra
      * This property is defined in Testbench v10+ but not v9.
      * We define it here for backward compatibility with both versions.
      *
-     * @var \Illuminate\Testing\TestResponse|null
+     * @var TestResponse|null
      */
     public static $latestResponse = null;
 
     protected function setUp(): void
     {
         parent::setUp();
+
+        // The default glider.source (resource_path('assets')) must exist for
+        // PathValidator's realpath containment check — in a fresh checkout the
+        // skeleton doesn't ship it, which made every test exercising the
+        // default source order-dependent on whichever test created it first.
+        if (is_string(config('glider.source')) && ! is_dir(config('glider.source'))) {
+            mkdir(config('glider.source'), 0755, true);
+        }
 
         Factory::guessFactoryNamesUsing(
             fn (string $modelName) => 'Daikazu\\LaravelGlider\\Database\\Factories\\' . class_basename($modelName) . 'Factory'

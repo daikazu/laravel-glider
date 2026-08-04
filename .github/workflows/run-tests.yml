@@ -8,6 +8,15 @@ on:
       - 'phpunit.xml.dist'
       - 'composer.json'
       - 'composer.lock'
+      - 'tests/fixtures/**'
+  pull_request:
+    paths:
+      - '**.php'
+      - '.github/workflows/run-tests.yml'
+      - 'phpunit.xml.dist'
+      - 'composer.json'
+      - 'composer.lock'
+      - 'tests/fixtures/**'
 
 concurrency:
   group: ${{ github.workflow }}-${{ github.ref }}
@@ -21,16 +30,12 @@ jobs:
       fail-fast: true
       matrix:
         os: [ubuntu-latest]
-        php: [8.4, 8.3]
-        laravel: [13.*, 12.*, 11.*]
+        php: [8.5, 8.4, 8.3]
+        laravel: [13.*]
         stability: [prefer-lowest, prefer-stable]
         include:
           - laravel: 13.*
             testbench: 11.*
-          - laravel: 12.*
-            testbench: 10.*
-          - laravel: 11.*
-            testbench: 9.*
 
 
     name: P${{ matrix.php }} - L${{ matrix.laravel }} - ${{ matrix.stability }} - ${{ matrix.os }}

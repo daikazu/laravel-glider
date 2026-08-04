@@ -14,7 +14,7 @@ class ConvertImageTagsToGliderCommand extends Command
      *
      * @var string
      */
-    protected $signature = 'glider:convert-img-tags
+    protected $signature = 'glider:convert
                             {--dry-run : Show what would be changed without making any changes}
                             {--backup : Create backup files before making changes}
                             {--path=resources/views : Path to search for blade files}
@@ -27,6 +27,12 @@ class ConvertImageTagsToGliderCommand extends Command
      * @var string
      */
     protected $description = 'Convert HTML img tags to Laravel Glider components (⚠️ USE AT YOUR OWN RISK - Run with --dry-run first)';
+
+    /**
+     * A src that is entirely `{{ asset('<string literal>') }}` — the only
+     * blade-echo form that is statically resolvable.
+     */
+    private const string STATIC_ASSET_PATTERN = '/^\{\{\s*asset\(\s*(["\'])([^"\']+)\1\s*\)\s*\}\}$/';
 
     private array $changedFiles = [];
     private array $totalChanges = [];
@@ -58,7 +64,7 @@ class ConvertImageTagsToGliderCommand extends Command
             $this->line('   2. OR create a new branch to review changes:');
             $this->line('      <fg=cyan>git checkout -b glider-conversion</>');
             $this->line('   3. Run this command first with --dry-run to preview changes:');
-            $this->line('      <fg=cyan>php artisan glider:convert-img-tags --dry-run</>');
+            $this->line('      <fg=cyan>php artisan glider:convert --dry-run</>');
             $this->line('   4. Use --backup to create timestamped backups of modified files');
             $this->newLine();
 
@@ -141,57 +147,87 @@ class ConvertImageTagsToGliderCommand extends Command
      */
     private function convertImageTags(string $content, bool $useResponsive, string $imagePath): string
     {
-        // Pattern to match <img> tags with src attribute, handling nested quotes in Blade syntax
-        $pattern = '/<img\s+([^>]*?)src=(["\'])((?:(?!\2).)*)\2([^>]*?)>/i';
+        // Match whole <img> tags; quoted sections may contain ">" safely.
+        $pattern = '/<img\b((?:[^>"\']|"[^"]*"|\'[^\']*\')*?)\/?>/i';
 
-        return preg_replace_callback($pattern, function (array $matches) use ($useResponsive, $imagePath): string {
-            $beforeSrc = trim($matches[1]);
-            $srcValue = $matches[3]; // The actual src value is now in group 3
-            $afterSrc = trim($matches[4]); // After src attributes are in group 4
+        $result = preg_replace_callback($pattern, function (array $matches) use ($useResponsive, $imagePath): string {
+            $attributes = $this->parseAttributes($matches[1]);
 
-            // Extract all attributes from the original img tag
-            $allAttributes = $this->extractAllAttributes($beforeSrc . ' ' . $afterSrc);
+            $src = null;
+            foreach ($attributes as $attribute) {
+                if ($attribute['name'] === ':src') {
+                    return $matches[0]; // dynamic binding — leave untouched
+                }
 
-            // Clean up the src value
-            $cleanSrc = $this->cleanSrcValue($srcValue, $imagePath);
-
-            // Build the glider component with all original attributes preserved
-            $componentType = $useResponsive ? 'x-glide-img-responsive' : 'x-glide-img';
-
-            // Start with the cleaned src
-            $attributes = ['src="' . $cleanSrc . '"'];
-
-            // Add all other original attributes
-            foreach ($allAttributes as $attr) {
-                if (! str_starts_with(strtolower($attr), 'src=')) {
-                    $attributes[] = $attr;
+                if (strtolower($attribute['name']) === 'src') {
+                    $src = $attribute['value'];
                 }
             }
 
-            $result = '<' . $componentType . ' ' . implode(' ', $attributes) . ' />';
+            // No literal, statically-resolvable src: leave the tag untouched.
+            // Blade-echo srcs are dynamic, except when the whole expression is
+            // asset() of a pure string literal — concatenations and variables
+            // inside asset() are still dynamic.
+            if ($src === null || (str_contains($src, '{{') && preg_match(self::STATIC_ASSET_PATTERN, trim($src)) !== 1)) {
+                return $matches[0];
+            }
 
-            // Track this change
+            $cleanSrc = $this->cleanSrcValue($src, $imagePath);
+            $componentType = $useResponsive ? 'x-glider-img-responsive' : 'x-glider-img';
+
+            // src first, every other attribute in original order and quoting
+            // that survives its content (values may hold the other quote type).
+            $parts = ['src="' . $cleanSrc . '"'];
+
+            foreach ($attributes as $attribute) {
+                if (strtolower($attribute['name']) === 'src') {
+                    continue;
+                }
+
+                if ($attribute['value'] === null) {
+                    $parts[] = $attribute['name']; // boolean attribute
+                    continue;
+                }
+
+                $quote = str_contains($attribute['value'], '"') ? "'" : '"';
+                $parts[] = $attribute['name'] . '=' . $quote . $attribute['value'] . $quote;
+            }
+
+            $converted = '<' . $componentType . ' ' . implode(' ', $parts) . ' />';
+
             $this->totalChanges[] = [
                 'from' => $matches[0],
-                'to'   => $result,
+                'to'   => $converted,
             ];
 
-            return $result;
+            return $converted;
         }, $content);
+
+        return $result ?? $content;
     }
 
     /**
-     * Extract all attributes from the attribute string
+     * Parse a tag's attribute blob preserving order, hyphenated/bound names,
+     * boolean attributes, and values containing the other quote type.
+     *
+     * @return list<array{name: string, value: ?string}>
      */
-    private function extractAllAttributes(string $attributeString): array
+    private function parseAttributes(string $attributeString): array
     {
-        $attributes = [];
-        $pattern = '/(\w+)=["\']([^"\']*?)["\']/';
+        preg_match_all(
+            '/(?<name>[:@a-zA-Z0-9_.-]+)(?:\s*=\s*(?:"(?<dq>[^"]*)"|\'(?<sq>[^\']*)\'|(?<uq>[^\s"\'>]+)))?/',
+            $attributeString,
+            $matches,
+            PREG_SET_ORDER | PREG_UNMATCHED_AS_NULL
+        );
 
-        preg_match_all($pattern, $attributeString, $matches, PREG_SET_ORDER);
+        $attributes = [];
 
         foreach ($matches as $match) {
-            $attributes[] = $match[1] . '="' . $match[2] . '"';
+            $attributes[] = [
+                'name'  => $match['name'],
+                'value' => $match['dq'] ?? $match['sq'] ?? $match['uq'] ?? null,
+            ];
         }
 
         return $attributes;
@@ -202,20 +238,34 @@ class ConvertImageTagsToGliderCommand extends Command
      */
     private function cleanSrcValue(string $srcValue, string $imagePath): string
     {
-        // Remove asset() wrapper
-        if (preg_match('/asset\(["\'](.+?)["\']/', $srcValue, $matches)) {
-            $path = $matches[1];
-            // Remove leading /images/ if present since glider handles this
-            return ltrim(str_replace($imagePath, '', $path), '/');
+        // Remove asset() wrapper (only the pure string-literal form gets here)
+        if (preg_match(self::STATIC_ASSET_PATTERN, trim($srcValue), $matches)) {
+            return $this->stripImagePathPrefix($matches[2], $imagePath);
         }
 
-        // Handle direct paths
-        if (str_starts_with($srcValue, $imagePath)) {
-            return ltrim(str_replace($imagePath, '', $srcValue), '/');
+        // External URLs stay as-is (glider supports remote sources directly)
+        if (str_contains($srcValue, '://')) {
+            return $srcValue;
         }
 
-        // Return as-is for external URLs or other formats
-        return $srcValue;
+        return $this->stripImagePathPrefix($srcValue, $imagePath);
+    }
+
+    /**
+     * Strip the public-URL prefix (--image-path) that maps to the glider
+     * source root, tolerating leading-slash differences on both sides:
+     * `/images/`, `images/`, `/images/x.jpg`, and `images/x.jpg` all align.
+     */
+    private function stripImagePathPrefix(string $path, string $imagePath): string
+    {
+        $path = ltrim($path, '/');
+        $prefix = trim($imagePath, '/');
+
+        if ($prefix !== '' && str_starts_with($path, $prefix . '/')) {
+            return substr($path, strlen($prefix) + 1);
+        }
+
+        return $path;
     }
 
     /**
@@ -284,9 +334,9 @@ class ConvertImageTagsToGliderCommand extends Command
 
             $this->newLine();
             $this->info('💡 To apply these changes, run the command without --dry-run');
-            $this->line('   <fg=cyan>php artisan glider:convert-img-tags</>');
+            $this->line('   <fg=cyan>php artisan glider:convert</>');
             $this->line('   OR with --backup to create backups:');
-            $this->line('   <fg=cyan>php artisan glider:convert-img-tags --backup</>');
+            $this->line('   <fg=cyan>php artisan glider:convert --backup</>');
         }
     }
 }
