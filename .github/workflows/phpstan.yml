@@ -24,5 +24,11 @@ jobs:
       - name: Install composer dependencies
         uses: ramsey/composer-install@v4
 
+      - name: Discover testbench packages
+        # Larastan validates view-string arguments against a booted testbench
+        # app; without package discovery the glider:: view namespace is
+        # unknown and every view() call is flagged.
+        run: composer run prepare
+
       - name: Run PHPStan
         run: ./vendor/bin/phpstan --error-format=github --memory-limit=1G
