@@ -44,12 +44,18 @@ class BuildCommand extends Command
 
         $paths = (array) config('glider.build.paths', []);
 
+        $this->line('');
+        $this->line('<fg=bright-cyan>✈️ GLIDER BUILD</> <fg=gray>(warming up the pixels)</>');
+        $this->line('<fg=bright-blue>──────────────────────────────────────────────</>');
+
         foreach ($paths as $path) {
             if (! is_string($path) || ! is_dir($path)) {
                 $label = is_string($path) ? $path : (json_encode($path) ?: 'null');
                 $this->warn("Configured build path does not exist, skipping: {$label}");
             }
         }
+
+        $this->line(sprintf('🔍 Scanning <fg=bright-yellow>%d</> template path(s)…', count($paths)));
 
         $result = $scanner->scan($paths);
 
@@ -78,31 +84,69 @@ class BuildCommand extends Command
 
         $jobs = array_values($jobsByCachePath);
 
+        $this->line(sprintf(
+            '📋 Found: <fg=bright-green>%d</> usage(s) → <fg=bright-green>%d</> unique conversion(s), <fg=bright-yellow>%d</> dynamic (stay on-the-fly)',
+            count($result['usages']),
+            count($jobs),
+            count($result['dynamic']),
+        ));
+        $this->line("<fg=bright-blue>──────────────────────────────────────────────</>\n");
+
         if ($this->option('dry-run')) {
             return $this->reportDryRun($jobs, $result['dynamic'], $resolveFailures);
         }
 
         $generated = 0;
         $failures = $resolveFailures;
+        $start = microtime(true);
 
-        foreach ($jobs as $job) {
-            try {
-                $server->setSource(Glider::getSourceFilesystem($job['path']));
-                $server->setCachePathCallable(fn (string $p, array $ps = []): string => Glider::getCachePath($p, $ps));
-                $server->makeImage(Glider::getImagePath($job['path']), $job['params']);
-                $generated++;
-            } catch (Throwable $e) {
-                $failures[] = [
-                    'path'   => $job['path'],
-                    'params' => $job['params'],
-                    'reason' => $e->getMessage(),
-                ];
+        if ($jobs !== []) {
+            $bar = $this->output->createProgressBar(count($jobs));
+            $bar->setFormat(' %current%/%max% [%bar%] %percent:3s%% — <fg=bright-yellow>%message%</>');
+            $bar->setMessage('warming up…');
+            $bar->start();
+
+            foreach ($jobs as $job) {
+                $bar->setMessage($this->jobLabel($job));
+                $bar->display();
+
+                try {
+                    $server->setSource(Glider::getSourceFilesystem($job['path']));
+                    $server->setCachePathCallable(fn (string $p, array $ps = []): string => Glider::getCachePath($p, $ps));
+                    $server->makeImage(Glider::getImagePath($job['path']), $job['params']);
+                    $generated++;
+                } catch (Throwable $e) {
+                    $failures[] = [
+                        'path'   => $job['path'],
+                        'params' => $job['params'],
+                        'reason' => $e->getMessage(),
+                    ];
+                }
+
+                $bar->advance();
             }
+
+            $bar->setMessage('done');
+            $bar->finish();
+            $this->newLine();
         }
 
-        $this->reportSummary($generated, $result['dynamic'], $failures);
+        $this->reportSummary($generated, $result['dynamic'], $failures, microtime(true) - $start);
 
         return $failures === [] ? self::SUCCESS : self::FAILURE;
+    }
+
+    /**
+     * Compact single-line label for the conversion currently being generated.
+     *
+     * @param  array{path: string, params: array}  $job
+     */
+    private function jobLabel(array $job): string
+    {
+        $params = json_encode($job['params']) ?: '';
+        $label = $job['path'] . ' ' . $params;
+
+        return strlen($label) <= 70 ? $label : substr($label, 0, 67) . '…';
     }
 
     /**
@@ -135,18 +179,28 @@ class BuildCommand extends Command
      * @param  list<array{file: string, tag: string}>  $dynamic
      * @param  list<array{path: string, params: array, reason: string}>  $failures
      */
-    private function reportSummary(int $generated, array $dynamic, array $failures): void
+    private function reportSummary(int $generated, array $dynamic, array $failures, float $elapsed): void
     {
         $this->newLine();
-        $this->info("generated: {$generated}");
+        $this->line('<fg=bright-blue>──────────────────────────────────────────────</>');
+        $this->line("✅ <fg=bright-green>generated: {$generated}</>");
 
         $this->reportDynamic($dynamic);
 
-        $this->line('failed: ' . count($failures));
+        $failureColor = $failures === [] ? 'green' : 'bright-red';
+        $this->line("<fg={$failureColor}>❌ failed: " . count($failures) . '</>');
 
         foreach ($failures as $failure) {
             $this->error(" - {$failure['path']} " . json_encode($failure['params']) . ": {$failure['reason']}");
         }
+
+        $this->line(sprintf('⏱️  Time: <fg=bright-magenta>%.2fs</>', $elapsed));
+
+        if ($failures === []) {
+            $this->line('<fg=green>✨ Cache is warm. Ship it! 🚀</>');
+        }
+
+        $this->line('');
     }
 
     /**
@@ -154,10 +208,12 @@ class BuildCommand extends Command
      */
     private function reportDynamic(array $dynamic): void
     {
-        $this->line('skipped (dynamic src): ' . count($dynamic));
+        $this->line('⏭️  skipped (dynamic src): ' . count($dynamic));
 
         foreach ($dynamic as $entry) {
-            $this->line(" - {$entry['file']}: {$entry['tag']}");
+            $tag = (string) preg_replace('/\s+/', ' ', $entry['tag']);
+            $tag = strlen($tag) <= 80 ? $tag : substr($tag, 0, 77) . '…';
+            $this->line("<fg=gray> - {$entry['file']}: {$tag}</>");
         }
     }
 }
