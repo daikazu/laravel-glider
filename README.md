@@ -102,7 +102,7 @@ $url = Glider::url('photo.jpg', ['w' => 400, 'q' => 85]);
 
 ### Image Manipulation
 
-All [Glide parameters](https://glide.thephpleague.com/api/quick-reference/) are supported with the `glide-` prefix:
+All [Glide parameters](https://glide.thephpleague.com/4.0/api/quick-reference/) are supported with the `glide-` prefix:
 
 **Sizing**
 ```html
