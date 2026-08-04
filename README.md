@@ -318,10 +318,10 @@ php artisan glider:build
 **Convert HTML img tags to components:**
 ```bash
 # Always preview first — this command rewrites your Blade files
-php artisan glider:convert-img-tags --dry-run
+php artisan glider:convert --dry-run
 
 # Apply (asks for confirmation; --backup creates timestamped copies first)
-php artisan glider:convert-img-tags --backup
+php artisan glider:convert --backup
 ```
 
 Only tags with a statically-resolvable `src` are converted — plain paths and

@@ -14,7 +14,7 @@ class ConvertImageTagsToGliderCommand extends Command
      *
      * @var string
      */
-    protected $signature = 'glider:convert-img-tags
+    protected $signature = 'glider:convert
                             {--dry-run : Show what would be changed without making any changes}
                             {--backup : Create backup files before making changes}
                             {--path=resources/views : Path to search for blade files}
@@ -64,7 +64,7 @@ class ConvertImageTagsToGliderCommand extends Command
             $this->line('   2. OR create a new branch to review changes:');
             $this->line('      <fg=cyan>git checkout -b glider-conversion</>');
             $this->line('   3. Run this command first with --dry-run to preview changes:');
-            $this->line('      <fg=cyan>php artisan glider:convert-img-tags --dry-run</>');
+            $this->line('      <fg=cyan>php artisan glider:convert --dry-run</>');
             $this->line('   4. Use --backup to create timestamped backups of modified files');
             $this->newLine();
 
@@ -320,9 +320,9 @@ class ConvertImageTagsToGliderCommand extends Command
 
             $this->newLine();
             $this->info('💡 To apply these changes, run the command without --dry-run');
-            $this->line('   <fg=cyan>php artisan glider:convert-img-tags</>');
+            $this->line('   <fg=cyan>php artisan glider:convert</>');
             $this->line('   OR with --backup to create backups:');
-            $this->line('   <fg=cyan>php artisan glider:convert-img-tags --backup</>');
+            $this->line('   <fg=cyan>php artisan glider:convert --backup</>');
         }
     }
 }

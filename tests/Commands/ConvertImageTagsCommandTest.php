@@ -19,7 +19,7 @@ function convertFixture(string $blade): string
     $path = test()->viewsDir . '/page.blade.php';
     File::put($path, $blade);
 
-    test()->artisan('glider:convert-img-tags', ['--path' => test()->viewsDir])
+    test()->artisan('glider:convert', ['--path' => test()->viewsDir])
         ->expectsConfirmation('Do you want to continue?', 'yes')
         ->assertSuccessful();
 
@@ -60,7 +60,7 @@ it('leaves dynamic sources untouched', function (string $blade) {
 it('converts to the responsive component with --responsive', function () {
     File::put($this->viewsDir . '/page.blade.php', '<img src="/images/a.jpg">');
 
-    $this->artisan('glider:convert-img-tags', ['--path' => $this->viewsDir, '--responsive' => true])
+    $this->artisan('glider:convert', ['--path' => $this->viewsDir, '--responsive' => true])
         ->expectsConfirmation('Do you want to continue?', 'yes')
         ->assertSuccessful();
 
@@ -72,7 +72,7 @@ it('makes no changes in dry-run mode', function () {
     $blade = '<img src="/images/a.jpg">';
     File::put($this->viewsDir . '/page.blade.php', $blade);
 
-    $this->artisan('glider:convert-img-tags', ['--path' => $this->viewsDir, '--dry-run' => true])
+    $this->artisan('glider:convert', ['--path' => $this->viewsDir, '--dry-run' => true])
         ->expectsOutputToContain('Would modify:')
         ->assertSuccessful();
 
@@ -82,7 +82,7 @@ it('makes no changes in dry-run mode', function () {
 it('creates a backup with --backup', function () {
     File::put($this->viewsDir . '/page.blade.php', '<img src="/images/a.jpg">');
 
-    $this->artisan('glider:convert-img-tags', ['--path' => $this->viewsDir, '--backup' => true])
+    $this->artisan('glider:convert', ['--path' => $this->viewsDir, '--backup' => true])
         ->expectsConfirmation('Do you want to continue?', 'yes')
         ->assertSuccessful();
 
