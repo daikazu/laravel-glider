@@ -92,6 +92,20 @@ A quick way to find every usage across your Blade views:
 grep -rl "x-glide-" resources/views
 ```
 
+**Background component DOM output also changed.** If your own CSS or
+JavaScript targets the rendered markup, update it:
+
+- `<x-glider-bg>` no longer emits a `<style>` block or a generated
+  `.glide-bg-*` class — the background renders as an inline `style` on the
+  container div (your own `class`/`style` attributes still merge in).
+- `<x-glider-bg-responsive>` still emits a scoped `<style>` block (it needs
+  media queries), but its generated class prefix changed from
+  `.glide-bg-*` to `.glider-bg-*`.
+- The container data attributes were renamed: `data-glide-bg` →
+  `data-glider-bg="true"` and `data-glide-src` → `data-glider-src`. The
+  lazy-loading contract (`data-bg-lazy`, `data-bg-src`, `data-bg-srcset`)
+  is unchanged.
+
 ### 6. Rename the facade
 
 ```diff

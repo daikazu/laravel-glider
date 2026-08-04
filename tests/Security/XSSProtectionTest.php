@@ -25,7 +25,7 @@ describe('XSS Protection in CSS Sanitization', function () {
         $component = new Bg(src: 'test.jpg');
         $component->attributes = new ComponentAttributeBag;
 
-        $css = $component->generateBackgroundCSS();
+        $css = $component->backgroundStyle();
 
         expect($css)->toContain("http://example.com/img/test\\'quote.jpg")
             ->and($css)->not->toContain("test'quote.jpg')");
@@ -43,7 +43,7 @@ describe('XSS Protection in CSS Sanitization', function () {
         );
         $component->attributes = new ComponentAttributeBag;
 
-        $css = $component->generateBackgroundCSS();
+        $css = $component->backgroundStyle();
 
         expect($css)->not->toContain('<script>')
             ->and($css)->not->toContain('</style><script>')
@@ -64,7 +64,7 @@ describe('XSS Protection in CSS Sanitization', function () {
         $component = new Bg(src: 'test.jpg');
         $component->attributes = new ComponentAttributeBag;
 
-        $css = $component->generateBackgroundCSS();
+        $css = $component->backgroundStyle();
 
         // The three single quotes from the malicious URL must all be escaped,
         // so the value can never break out of the CSS `url('...')` context.

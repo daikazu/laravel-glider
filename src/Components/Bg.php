@@ -8,13 +8,10 @@ use Daikazu\LaravelGlider\Facades\Glider;
 use Daikazu\LaravelGlider\Support\CssSanitizer;
 use Daikazu\LaravelGlider\Support\FocalPoint;
 use Daikazu\LaravelGlider\Support\GlideAttributes;
-use Illuminate\Support\Str;
 use Illuminate\View\Component;
 
 class Bg extends Component
 {
-    private ?string $componentId = null;
-
     public function __construct(
         public string $src,
         public ?string $position = null,
@@ -31,12 +28,16 @@ class Bg extends Component
     }
 
     /**
-     * Generate CSS for background image
+     * The inline background style for the container. A single non-responsive
+     * background needs no <style> block or generated class — inline CSS
+     * removes the per-component ID machinery entirely.
+     *
+     * When a fallback is set it is the image shown inline (a lazy loader
+     * swaps in the real image from data-bg-src).
      */
-    public function generateBackgroundCSS(): string
+    public function backgroundStyle(): string
     {
-        $componentId = $this->getComponentId();
-        $url = CssSanitizer::url($this->getBackgroundUrl());
+        $url = CssSanitizer::url($this->getFallbackUrl() ?? $this->getBackgroundUrl());
 
         $properties = [
             "background-image: url('{$url}')",
@@ -46,10 +47,7 @@ class Bg extends Component
             'background-attachment: ' . CssSanitizer::value($this->attachment),
         ];
 
-        $rule = implode('; ', $properties) . ';';
-        $cssRule = ".glide-bg-{$componentId} { {$rule} }";
-
-        return '<style>' . PHP_EOL . $cssRule . PHP_EOL . '</style>';
+        return implode('; ', $properties) . ';';
     }
 
     /**
@@ -58,29 +56,6 @@ class Bg extends Component
     public function getBackgroundUrl(): string
     {
         return Glider::getUrl($this->src, GlideAttributes::from($this->attributes));
-    }
-
-    /**
-     * Get the unique component ID for CSS targeting
-     */
-    public function getComponentId(): string
-    {
-        if ($this->componentId === null) {
-            static $counter = 0;
-            $counter++;
-
-            $this->componentId = 'comp-' . Str::slug(basename($this->src, pathinfo($this->src, PATHINFO_EXTENSION))) . '-' . $counter;
-        }
-
-        return $this->componentId;
-    }
-
-    /**
-     * Get CSS class name for this component
-     */
-    public function getCSSClass(): string
-    {
-        return 'glide-bg-' . $this->getComponentId();
     }
 
     /**

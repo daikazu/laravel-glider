@@ -40,16 +40,26 @@ it('renders x-glider-img-responsive with srcset and sizes bootstrap', function (
         ->not->toContain('srcset-widths=');
 });
 
-it('renders x-glider-bg with scoped style block, class, and slot', function () {
+it('renders x-glider-bg as a single div with inline background style', function () {
     $html = Blade::render('<x-glider-bg src="test-tiny.jpg" glide-w="10" class="hero"><h1>Hi</h1></x-glider-bg>');
 
-    expect($html)->toContain('<style>')
-        ->toMatch('/\.glide-bg-comp-[\w-]+ \{ background-image: url\(/')
+    expect($html)->not->toContain('<style>')
+        ->toContain('background-image: url(')
         ->toContain('background-size: cover')
         ->toContain('<h1>Hi</h1>')
-        ->toMatch('/class="[^"]*hero[^"]*"/')
-        ->toContain('data-glide-bg')
+        ->toContain('class="hero"')
+        ->toContain('data-glider-bg="true"')
+        ->toContain('data-glider-src="test-tiny.jpg"')
+        ->not->toContain('data-glide-bg')
         ->not->toContain('glide-w=');
+});
+
+it('appends the user style to the inline background style on x-glider-bg', function () {
+    $html = Blade::render('<x-glider-bg src="test-tiny.jpg" style="border: 1px solid red;">x</x-glider-bg>');
+
+    expect($html)->toContain('background-image: url(')
+        ->toContain('border: 1px solid red')
+        ->and(substr_count($html, 'style='))->toBe(1);
 });
 
 it('renders x-glider-bg position, size, repeat, attachment, and focal-point props', function () {
@@ -74,7 +84,9 @@ it('renders x-glider-bg-responsive media queries from explicit breakpoints', fun
 
     expect($html)->toContain('<style>')
         ->toContain('@media (min-width: 992px)')
-        ->toMatch('/\.glide-bg-comp-[\w-]+/')
+        ->toMatch('/\.glider-bg-comp-[\w-]+/')
+        ->toContain('data-glider-bg="true"')
+        ->not->toContain('data-glide-bg')
         ->toContain('background-image: url(');
 });
 

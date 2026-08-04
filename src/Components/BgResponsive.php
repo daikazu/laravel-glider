@@ -47,7 +47,7 @@ class BgResponsive extends Component
         $defaultBreakpoint = $breakpoints->first();
         if ($defaultBreakpoint) {
             $cssRules[] = $this->generateCSSRule(
-                ".glide-bg-{$componentId}",
+                ".glider-bg-{$componentId}",
                 $defaultBreakpoint['url'],
             );
         }
@@ -56,7 +56,7 @@ class BgResponsive extends Component
         $breakpoints->slice(1)->each(function (array $breakpoint) use (&$cssRules, $componentId): void {
             $mediaQuery = "@media (min-width: {$breakpoint['min_width']}px)";
             $rule = $this->generateCSSRule(
-                ".glide-bg-{$componentId}",
+                ".glider-bg-{$componentId}",
                 $breakpoint['url'],
                 true  // Include selector in media queries
             );
@@ -69,18 +69,16 @@ class BgResponsive extends Component
     }
 
     /**
-     * Get the unique component ID for CSS targeting
+     * Get the unique component ID for CSS targeting. Random rather than a
+     * static counter: statics persist across requests in long-running
+     * workers (Octane), and a per-render random suffix cannot collide
+     * with other instances on the page either way.
      */
     public function getComponentId(): string
     {
-        if ($this->componentId === null) {
-            static $counter = 0;
-            $counter++;
-
-            $this->componentId = 'comp-' . Str::slug(basename($this->src, pathinfo($this->src, PATHINFO_EXTENSION))) . '-' . $counter;
-        }
-
-        return $this->componentId;
+        return $this->componentId ??= 'comp-'
+            . Str::slug(basename($this->src, pathinfo($this->src, PATHINFO_EXTENSION)))
+            . '-' . strtolower(Str::random(6));
     }
 
     /**
@@ -88,7 +86,7 @@ class BgResponsive extends Component
      */
     public function getCSSClass(): string
     {
-        return 'glide-bg-' . $this->getComponentId();
+        return 'glider-bg-' . $this->getComponentId();
     }
 
     /**
