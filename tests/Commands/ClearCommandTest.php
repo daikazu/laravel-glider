@@ -19,7 +19,26 @@ it('clears a local path cache but preserves the gitignore', function () {
 
     expect(File::exists($dir . '/a.webp'))->toBeFalse()
         ->and(File::exists($dir . '/sub/b.webp'))->toBeFalse()
-        ->and(File::exists($dir . '/.gitignore'))->toBeTrue();
+        ->and(File::isDirectory($dir . '/sub'))->toBeFalse()
+        ->and(File::exists($dir . '/.gitignore'))->toBeTrue()
+        ->and(File::isDirectory($dir))->toBeTrue();
+
+    File::deleteDirectory($dir);
+});
+
+it('removes nested empty group folders after clearing', function () {
+    $dir = sys_get_temp_dir() . '/glider-clear-groups-test';
+    File::deleteDirectory($dir);
+    File::ensureDirectoryExists($dir . '/aW1n/deep');
+    File::put($dir . '/aW1n/deep/conversion.webp', 'x');
+
+    config()->set('glider.cache', $dir);
+
+    $this->artisan('glider:clear', ['--force' => true])->assertSuccessful();
+
+    expect(File::isDirectory($dir . '/aW1n/deep'))->toBeFalse()
+        ->and(File::isDirectory($dir . '/aW1n'))->toBeFalse()
+        ->and(File::isDirectory($dir))->toBeTrue();
 
     File::deleteDirectory($dir);
 });

@@ -89,6 +89,8 @@ class ClearGlideCacheCommand extends Command
         });
         $this->newLine();
 
+        $this->removeEmptyDirectories($filesystem);
+
         $elapsed = microtime(true) - $start;
 
         $this->line("🗑️  Removed: <fg=bright-green>{$deleted}</> file(s), <fg=bright-green>{$this->humanBytes($deletedBytes)}</>");
@@ -126,6 +128,37 @@ class ClearGlideCacheCommand extends Command
         }
 
         return $files;
+    }
+
+    /**
+     * Remove directories left empty by the file deletions (relevant when
+     * group_cache_in_folders nests conversions in per-image folders). Deepest
+     * first, and only when nothing remains inside. On object stores,
+     * directories are virtual prefixes and the listing is typically empty —
+     * this is then a no-op.
+     */
+    private function removeEmptyDirectories(FilesystemOperator $filesystem): void
+    {
+        try {
+            $directories = [];
+
+            foreach ($filesystem->listContents('', true) as $item) {
+                /** @var StorageAttributes $item */
+                if ($item->isDir()) {
+                    $directories[] = $item->path();
+                }
+            }
+
+            usort($directories, fn (string $a, string $b): int => substr_count($b, '/') <=> substr_count($a, '/'));
+
+            foreach ($directories as $directory) {
+                if (iterator_count($filesystem->listContents($directory, false)) === 0) {
+                    $filesystem->deleteDirectory($directory);
+                }
+            }
+        } catch (Throwable) {
+            // Leftover empty folders are cosmetic; never fail the clear over them
+        }
     }
 
     private function humanBytes(int $bytes, int $precision = 2): string
