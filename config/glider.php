@@ -126,9 +126,10 @@ return [
     | optional GLIDER_CACHE_PREFIX) takes precedence over GLIDER_CACHE_PATH.
     | The same _DISK/_PREFIX pattern works for source and watermarks.
     |
-    | For ephemeral/hybrid deployments, `glider:build --cache-path=public/img`
-    | can bake conversions into the release artifact while this runtime cache
-    | points at a shared disk — see the README's Deployment Recipes.
+    | For ephemeral/hybrid deployments, `glider:build --static` bakes
+    | conversions into public/{base_url} inside the release artifact while
+    | this runtime cache points at a shared disk — see the README's
+    | Deployment Recipes.
     |
     | This setting is the pivot point for both deployment recipes described under
     | 'source' above: an S3 disk reference here gives every server a shared,

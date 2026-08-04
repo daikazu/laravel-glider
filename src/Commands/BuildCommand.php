@@ -26,16 +26,17 @@ class BuildCommand extends Command
 {
     public $signature = 'glider:build
         {--dry-run : List conversions without generating them}
-        {--cache-path= : Write conversions to this path instead of the configured cache (e.g. public/img)}';
+        {--static : Bake conversions into public/{base_url} for static serving instead of the configured cache}';
 
     public $description = 'Prebuild all statically discoverable Glide conversions found in Blade templates';
 
     public function handle(TemplateScanner $scanner, ConversionResolver $resolver): int
     {
-        $cacheOverride = $this->option('cache-path');
-
-        if (is_string($cacheOverride) && $cacheOverride !== '') {
-            config(['glider.cache' => $cacheOverride]);
+        if ($this->option('static')) {
+            // The static-serve location is derived from config, not typed by
+            // hand — a mistyped path that doesn't match base_url would bake
+            // files no request ever finds.
+            config(['glider.cache' => public_path(trim((string) config('glider.base_url'), '/'))]);
         }
 
         // Resolved after the override so the server's cache filesystem

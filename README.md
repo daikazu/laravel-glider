@@ -297,9 +297,9 @@ See [full Glide documentation](https://glide.thephpleague.com/) for all paramete
 # left behind by `group_cache_in_folders`
 php artisan glider:clear
 
-# Clear a specific target instead of the configured cache — e.g. the baked
-# tier from `glider:build --cache-path` — leaving the runtime cache untouched
-php artisan glider:clear --cache-path=public/img
+# Clear the baked static tier (public/{base_url}, from `glider:build
+# --static`) instead of the configured cache — the runtime cache is untouched
+php artisan glider:clear --static
 
 # Skip the confirmation prompt in production
 php artisan glider:clear --force
@@ -307,9 +307,9 @@ php artisan glider:clear --force
 
 Cached conversions are byte-identical whether they came from `glider:build`
 or an on-the-fly request, so within a single cache store there is no
-"prebuilt only" filter — but since the baked tier and the runtime cache are
-separate stores in the hybrid recipe, `--cache-path` lets you clear either
-one independently.
+"prebuilt only" filter — but since the baked static tier and the runtime
+cache are separate stores in the hybrid recipe, `--static` lets you clear
+either one independently.
 
 **Prebuild all statically discoverable image conversions:**
 ```bash
@@ -407,10 +407,12 @@ php artisan glider:build
 # Preview what would be generated without writing anything to cache
 php artisan glider:build --dry-run
 
-# Write to a different cache target than the configured one — used by the
-# hybrid deployment recipe to bake conversions into the release artifact
-# while the runtime cache lives elsewhere (see Deployment Recipes below)
-php artisan glider:build --cache-path=public/img
+# Bake conversions into public/{base_url} for static serving — used by the
+# hybrid deployment recipe to build the static tier into the release
+# artifact while the runtime cache lives elsewhere (see Deployment Recipes
+# below). The target is derived from config, so it always aligns with the
+# URLs the web server will receive.
+php artisan glider:build --static
 ```
 
 Usages with a dynamic `src` (a variable or expression rather than a literal
@@ -520,8 +522,8 @@ infrastructure.
 
 For sites where most images are local/static assets but some come from a
 CMS or database. Bake the static conversions **into the deployment
-artifact** at build time with `--cache-path`, while the runtime cache
-points at the shared bucket:
+artifact** at build time with `--static`, while the runtime cache points
+at the shared bucket:
 
 ```dotenv
 # runtime environment
@@ -532,8 +534,9 @@ GLIDER_SECURE=true
 
 ```bash
 # BUILD command (runs while the artifact is created, e.g. Laravel Cloud
-# build step or CI before packaging):
-php artisan glider:build --cache-path=public/img
+# build step or CI before packaging). Bakes into public/{base_url} —
+# derived from config, so it always aligns with the request URLs:
+php artisan glider:build --static
 ```
 
 How the split works — with zero routing configuration:

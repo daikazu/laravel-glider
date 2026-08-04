@@ -56,8 +56,8 @@ it('clears a disk-based cache without crashing', function () {
         ->and(Storage::disk('cache-disk')->exists('other/keep.txt'))->toBeTrue();
 });
 
-it('clears only the --cache-path target, leaving the configured cache alone', function () {
-    $baked = sys_get_temp_dir() . '/glider-clear-baked';
+it('clears only the baked public/{base_url} tier with --static, leaving the configured cache alone', function () {
+    $baked = public_path('img');
     $runtime = sys_get_temp_dir() . '/glider-clear-runtime';
     File::deleteDirectory($baked);
     File::deleteDirectory($runtime);
@@ -68,13 +68,15 @@ it('clears only the --cache-path target, leaving the configured cache alone', fu
 
     config()->set('glider.cache', $runtime);
 
-    $this->artisan('glider:clear', ['--force' => true, '--cache-path' => $baked])->assertSuccessful();
+    try {
+        $this->artisan('glider:clear', ['--force' => true, '--static' => true])->assertSuccessful();
 
-    expect(File::exists($baked . '/a.webp'))->toBeFalse()
-        ->and(File::exists($runtime . '/b.webp'))->toBeTrue();
-
-    File::deleteDirectory($baked);
-    File::deleteDirectory($runtime);
+        expect(File::exists($baked . '/a.webp'))->toBeFalse()
+            ->and(File::exists($runtime . '/b.webp'))->toBeTrue();
+    } finally {
+        File::deleteDirectory($baked);
+        File::deleteDirectory($runtime);
+    }
 });
 
 it('sweeps leftover empty group folders even when no files remain', function () {

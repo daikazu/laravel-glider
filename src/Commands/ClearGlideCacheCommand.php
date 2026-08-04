@@ -14,16 +14,14 @@ class ClearGlideCacheCommand extends Command
 {
     public $signature = 'glider:clear
         {--force : Force the operation to run when in production}
-        {--cache-path= : Clear this path instead of the configured cache (e.g. a baked public/img dir)}';
+        {--static : Clear the baked public/{base_url} static tier instead of the configured cache}';
 
     public $description = 'Remove the Glider cached images';
 
     public function handle(FilesystemResolver $resolver): int
     {
-        $cacheOverride = $this->option('cache-path');
-
-        $cacheConfig = is_string($cacheOverride) && $cacheOverride !== ''
-            ? $cacheOverride
+        $cacheConfig = $this->option('static')
+            ? public_path(trim((string) config('glider.base_url'), '/'))
             : config('glider.cache');
 
         // Fun banner
