@@ -14,6 +14,7 @@ On-the-fly image manipulation for Laravel using [League/Glide](https://glide.the
 ## Features
 
 - **On-demand Processing** - Transform images via URL parameters
+- **Readable URLs** - Source paths and filenames stay visible (`/img/coins/hero~token.webp`), good for debugging and image SEO
 - **Responsive Images** - Automatic srcset and responsive backgrounds
 - **Remote Images** - Process external URLs with caching
 - **Secure URLs** - Signed URLs prevent unauthorized manipulation

@@ -27,28 +27,29 @@ final readonly class Glider
         private BackgroundCss $backgroundCss,
     ) {}
 
-    public function decodeParams(string $string): array
-    {
-        return $this->codec->decodeParams($string);
-    }
-
     /**
-     * @throws InvalidArgumentException if the decoded path fails security
+     * Parse a glider-relative URL path ({dirs...}/{name}~{token}.{ext}) into
+     * its source path, manipulation params, and output extension. Returns
+     * null when the path is malformed.
+     *
+     * @return array{path: string, params: array<string, string>, extension: string}|null
+     *
+     * @throws InvalidArgumentException if the parsed source path fails security
      *                                  validation (e.g. directory traversal, null bytes).
      */
-    public function decodePath(string $string): string
+    public function parsePath(string $relative): ?array
     {
-        $decoded = $this->codec->decode($string);
-        if ($decoded === null) {
-            return '';
+        $parsed = $this->codec->parseRelativePath($relative);
+
+        if ($parsed === null) {
+            return null;
         }
 
-        // Validate decoded path for security
-        if (! Str::isUrl($decoded)) {
-            $this->pathValidator->validate($decoded);
+        if (! Str::isUrl($parsed['path'])) {
+            $this->pathValidator->validate($parsed['path']);
         }
 
-        return $decoded;
+        return $parsed;
     }
 
     public function getCachePath(string $path, array $params = []): string

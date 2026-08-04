@@ -26,25 +26,32 @@ beforeEach(function () {
     (new Illuminate\Filesystem\Filesystem)->deleteDirectory(storage_path('app/glider-cache'), preserve: true);
 });
 
-function makeGlideStub(string $decodedPath, array $decodedParams, Filesystem $filesystem, ?Closure $onGetCachePath = null): object
+function gliderToken(array $params): string
 {
-    return new class($decodedPath, $decodedParams, $filesystem, $onGetCachePath)
+    ksort($params);
+
+    return rtrim(strtr(base64_encode(http_build_query($params)), '+/', '-_'), '=');
+}
+
+function makeGlideStub(string $decodedPath, array $decodedParams, string $extension, Filesystem $filesystem, ?Closure $onGetCachePath = null): object
+{
+    return new class($decodedPath, $decodedParams, $extension, $filesystem, $onGetCachePath)
     {
         public function __construct(
             private string $decodedPath,
             private array $decodedParams,
+            private string $extension,
             private Filesystem $filesystem,
             private ?Closure $onGetCachePath = null,
         ) {}
 
-        public function decodePath(string $string): string
+        public function parsePath(string $relative): ?array
         {
-            return $this->decodedPath;
-        }
-
-        public function decodeParams(string $string): array
-        {
-            return $this->decodedParams;
+            return [
+                'path'      => $this->decodedPath,
+                'params'    => $this->decodedParams,
+                'extension' => $this->extension,
+            ];
         }
 
         public function getSourceFilesystem(string $path): Filesystem
@@ -70,8 +77,6 @@ function makeGlideStub(string $decodedPath, array $decodedParams, Filesystem $fi
 it('returns the server response and sets fm from extension when missing', function () {
     $controller = new GlideController;
 
-    $encodedPath = 'ignored';
-    $encodedParams = 'ignored';
     $extension = 'webp';
 
     $decodedPath = 'images/pic.jpg';
@@ -84,6 +89,7 @@ it('returns the server response and sets fm from extension when missing', functi
     Glider::swap(makeGlideStub(
         $decodedPath,
         $decodedParams,
+        $extension,
         $filesystem,
         function (string $path, array $params) use ($decodedPath, $extension) {
             expect($path)->toBe($decodedPath);
@@ -118,7 +124,7 @@ it('returns the server response and sets fm from extension when missing', functi
 
     $request = Request::create('/');
 
-    $response = $controller($request, $server, app(PresetPolicy::class), $encodedPath, $encodedParams, $extension);
+    $response = $controller($request, $server, app(PresetPolicy::class), 'stubbed~path.jpg');
 
     expect($response)->toBe($expectedResponse);
 });
@@ -126,8 +132,6 @@ it('returns the server response and sets fm from extension when missing', functi
 it('does not override fm when provided in params', function () {
     $controller = new GlideController;
 
-    $encodedPath = 'ignored2';
-    $encodedParams = 'ignored2';
     $extension = 'jpg';
 
     $decodedPath = 'images/photo.png';
@@ -138,6 +142,7 @@ it('does not override fm when provided in params', function () {
     Glider::swap(makeGlideStub(
         $decodedPath,
         $decodedParams,
+        $extension,
         $filesystem,
         fn (string $path, array $params) => 'cache/other'
     ));
@@ -154,7 +159,7 @@ it('does not override fm when provided in params', function () {
 
     $request = Request::create('/');
 
-    $response = $controller($request, $server, app(PresetPolicy::class), $encodedPath, $encodedParams, $extension);
+    $response = $controller($request, $server, app(PresetPolicy::class), 'stubbed~path.jpg');
 
     expect($response)->toBe($expectedResponse);
 });
@@ -162,8 +167,6 @@ it('does not override fm when provided in params', function () {
 it('throws NotFoundHttpException when Server throws FileNotFoundException', function () {
     $controller = new GlideController;
 
-    $encodedPath = 'p';
-    $encodedParams = 'q';
     $extension = 'jpg';
 
     $decodedPath = 'not/existing.jpg';
@@ -174,6 +177,7 @@ it('throws NotFoundHttpException when Server throws FileNotFoundException', func
     Glider::swap(makeGlideStub(
         $decodedPath,
         $decodedParams,
+        $extension,
         $filesystem
     ));
 
@@ -188,15 +192,13 @@ it('throws NotFoundHttpException when Server throws FileNotFoundException', func
 
     $request = Request::create('/');
 
-    expect(fn () => $controller($request, $server, app(PresetPolicy::class), $encodedPath, $encodedParams, $extension))
+    expect(fn () => $controller($request, $server, app(PresetPolicy::class), 'stubbed~path.jpg'))
         ->toThrow(NotFoundHttpException::class);
 });
 
 it('throws NotFoundHttpException when Server throws FilesystemException', function () {
     $controller = new GlideController;
 
-    $encodedPath = 'p2';
-    $encodedParams = 'q2';
     $extension = 'png';
 
     $decodedPath = 'erroring/image.png';
@@ -207,6 +209,7 @@ it('throws NotFoundHttpException when Server throws FilesystemException', functi
     Glider::swap(makeGlideStub(
         $decodedPath,
         $decodedParams,
+        $extension,
         $filesystem
     ));
 
@@ -221,7 +224,7 @@ it('throws NotFoundHttpException when Server throws FilesystemException', functi
 
     $request = Request::create('/');
 
-    expect(fn () => $controller($request, $server, app(PresetPolicy::class), $encodedPath, $encodedParams, $extension))
+    expect(fn () => $controller($request, $server, app(PresetPolicy::class), 'stubbed~path.jpg'))
         ->toThrow(NotFoundHttpException::class);
 });
 
@@ -262,10 +265,8 @@ it('returns 400 instead of 500 when the encoded path decodes to a directory trav
     // like every other invalid-input case.
     config()->set('glider.secure', false);
 
-    $encodedPath = rtrim(strtr(base64_encode('../secret'), '+/', '-_'), '=');
-    $encodedParams = rtrim(strtr(base64_encode('{}'), '+/', '-_'), '=');
-
-    $url = url(config('glider.base_url') . "/{$encodedPath}/{$encodedParams}.jpg");
+    $token = gliderToken(['se' => 'txt', 'w' => '10']);
+    $url = url(config('glider.base_url') . "/../secret~{$token}.jpg");
 
     $this->get($url)->assertStatus(400);
 });
@@ -273,10 +274,8 @@ it('returns 400 instead of 500 when the encoded path decodes to a directory trav
 it('returns 400 for an invalid fm (format) parameter value', function () {
     config()->set('glider.secure', false);
 
-    $encodedPath = rtrim(strtr(base64_encode('test-tiny.jpg'), '+/', '-_'), '=');
-    $encodedParams = rtrim(strtr(base64_encode((string) json_encode(['fm' => 'bogus'])), '+/', '-_'), '=');
-
-    $url = url(config('glider.base_url') . "/{$encodedPath}/{$encodedParams}.jpg");
+    $token = gliderToken(['se' => 'jpg', 'fm' => 'bogus', 'w' => '10']);
+    $url = url(config('glider.base_url') . "/test-tiny~{$token}.jpg");
 
     $this->get($url)->assertStatus(400);
 });
@@ -287,8 +286,6 @@ it('returns 404 instead of 500 when cacheFileExists throws under on_the_fly=fals
     // uncaught 500 instead of the 404 every other Flysystem failure maps to.
     $controller = new GlideController;
 
-    $encodedPath = 'p3';
-    $encodedParams = 'q3';
     $extension = 'jpg';
 
     $decodedPath = 'flaky/image.jpg';
@@ -296,7 +293,7 @@ it('returns 404 instead of 500 when cacheFileExists throws under on_the_fly=fals
 
     $filesystem = new Filesystem(new LocalFilesystemAdapter(sys_get_temp_dir()));
 
-    Glider::swap(makeGlideStub($decodedPath, $decodedParams, $filesystem));
+    Glider::swap(makeGlideStub($decodedPath, $decodedParams, $extension, $filesystem));
 
     config()->set('glider.on_the_fly', false);
 
@@ -310,6 +307,6 @@ it('returns 404 instead of 500 when cacheFileExists throws under on_the_fly=fals
 
     $request = Request::create('/');
 
-    expect(fn () => $controller($request, $server, app(PresetPolicy::class), $encodedPath, $encodedParams, $extension))
+    expect(fn () => $controller($request, $server, app(PresetPolicy::class), 'stubbed~path.jpg'))
         ->toThrow(NotFoundHttpException::class);
 });

@@ -15,12 +15,16 @@ return [
     |--------------------------------------------------------------------------
     |
     | This setting controls the base URL prefix for all image manipulation routes.
-    | Images will be served from URLs like: /img/encoded_path/encoded_params.ext
+    | Images are served from human-readable URLs that keep the source path and
+    | filename visible (good for debugging and image SEO), with the
+    | manipulation parameters in a compact token after a `~`:
+    |
+    |   /{base_url}/{source dirs...}/{name}~{token}.{output extension}
     |
     | Default: 'img'
     | Example URLs:
-    |   - /img/base64_path/base64_params.jpg
-    |   - /my-images/base64_path/base64_params.webp (if set to 'my-images')
+    |   - /img/coins/themes/memorial/hero~Zm09d2VicCZxPTg1JnNlPWpwZyZ3PTMzMw.webp
+    |   - /my-images/hero~Zm09d2VicCZxPTg1JnNlPWpwZyZ3PTMzMw.webp (if set to 'my-images')
     |
     */
 

@@ -7,7 +7,8 @@ use Illuminate\Support\Facades\Route;
 Route::prefix(config('glider.base_url'))
     ->middleware([VerifyGlideSignature::class])
     ->group(function () {
-        Route::get('{encoded_path}/{encoded_params}.{extension}', GlideController::class)
-            ->whereIn('extension', ['jpg', 'pjpg', 'png', 'gif', 'webp', 'avif', 'tiff'])
+        // {path} is the readable relative path: {dirs...}/{name}~{token}.{ext}
+        Route::get('{path}', GlideController::class)
+            ->where('path', '.+~[A-Za-z0-9_-]+\.(?:jpg|png|gif|webp|avif|tiff)')
             ->name('glider');
     });

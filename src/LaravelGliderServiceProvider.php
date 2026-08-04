@@ -15,13 +15,10 @@ use Daikazu\LaravelGlider\Factories\ResponseFactory;
 use Daikazu\LaravelGlider\Security\PathValidator;
 use Daikazu\LaravelGlider\Support\FilesystemResolver;
 use Illuminate\Contracts\Foundation\Application;
-use Illuminate\Routing\UrlGenerator;
 use League\Glide\Server;
 use League\Glide\ServerFactory;
 use League\Glide\Signatures\SignatureFactory;
 use League\Glide\Signatures\SignatureInterface;
-use League\Glide\Urls\UrlBuilder;
-use League\Glide\Urls\UrlBuilderFactory;
 use Spatie\LaravelPackageTools\Package;
 use Spatie\LaravelPackageTools\PackageServiceProvider;
 
@@ -52,11 +49,6 @@ class LaravelGliderServiceProvider extends PackageServiceProvider
         ));
 
         $this->app->instance(SignatureInterface::class, SignatureFactory::create((string) config('glider.sign_key', '')));
-
-        $this->app->bind(UrlBuilder::class, fn (Application $app): UrlBuilder => UrlBuilderFactory::create(
-            $app->make(UrlGenerator::class)->route('glider', ['path' => '/']),
-            config('glider.sign_key')
-        ));
 
         $this->app->bind(Server::class, function (Application $app): Server {
             $resolver = $app->make(FilesystemResolver::class);

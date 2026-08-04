@@ -48,63 +48,82 @@ final readonly class UrlGenerator
             }
         }
 
-        // Now we determine the route parameters
-        $routeParams = $this->routeParams($path, $params);
+        $relativeUrl = $this->prefix() . '/' . $this->codec->encodeUrlSegments($this->relativePath($path, $params));
 
         // Only add signature if secure mode is enabled
         if (config('glider.secure', true)) {
-            $signedParams = $this->signature->addSignature(route('glider', $routeParams, false), []);
+            $signedParams = $this->signature->addSignature($relativeUrl, []);
 
-            $routeParams['s'] = $signedParams['s'];
+            return url($relativeUrl) . '?s=' . $signedParams['s'];
         }
 
-        return route('glider', $routeParams);
+        return url($relativeUrl);
     }
 
+    /**
+     * The cache path mirrors the (unencoded) URL path after the base prefix —
+     * the invariant behind the static-serve property and build/runtime
+     * cache equivalence.
+     */
     public function cachePath(string $path, array $params = []): string
     {
-        $routeParams = $this->routeParams($path, $params);
-        $fullRoute = route('glider', $routeParams, false);
-
-        return ltrim(Str::after($fullRoute, '/' . config('glider.base_url')), '/');
+        return $this->relativePath($path, $this->params->mapPresetAlias($params));
     }
 
-    private function routeParams(string $path, array $parameters = []): array
+    /**
+     * Reverse of url() for glider-served URLs: extracts (source path, params,
+     * extension) from an absolute or relative URL, or returns null when the
+     * URL is not served by the glider route (e.g. a direct-serve asset URL).
+     *
+     * @return array{path: string, params: array<string, string>, extension: string}|null
+     */
+    public function parseUrl(string $url): ?array
     {
-        $resolved = $this->params->routeParams($path, $parameters);
+        $urlPath = parse_url($url, PHP_URL_PATH);
 
-        return [
-            'encoded_path'   => $this->encodePath($path),
-            'encoded_params' => $this->encodeParams($resolved['params']),
-            'extension'      => $resolved['extension'],
-        ];
+        if (! is_string($urlPath) || ! str_starts_with($urlPath, $this->prefix() . '/')) {
+            return null;
+        }
+
+        $relative = substr($urlPath, strlen($this->prefix()) + 1);
+        $decoded = implode('/', array_map(rawurldecode(...), explode('/', $relative)));
+
+        return $this->codec->parseRelativePath($decoded);
     }
 
-    private function encodePath(string $path): string
+    private function relativePath(string $path, array $params): string
+    {
+        $sourcePath = $this->normalizeSourcePath($path);
+        $resolved = $this->params->routeParams($sourcePath, $params);
+        $tokenParams = $this->params->normalize($resolved['params']);
+
+        return $this->codec->buildRelativePath($sourcePath, $tokenParams, $resolved['extension']);
+    }
+
+    private function prefix(): string
+    {
+        return '/' . trim((string) config('glider.base_url'), '/');
+    }
+
+    private function normalizeSourcePath(string $path): string
     {
         if (Str::isUrl($path) && Str::startsWith($path, config('app.url')) && ! Str::startsWith($path, url(config('glider.base_url')))) {
             $path = Str::after($path, config('app.url'));
         }
 
-        // Remove query parameters from path if they exist
+        if (Str::isUrl($path)) {
+            return $path;
+        }
+
+        // Remove query parameters from local paths if they exist
         if (str_contains($path, '?')) {
             $path = explode('?', $path)[0];
         }
 
         $path = ltrim($path, '/');
 
-        // Validate local paths for security
-        if (! Str::isUrl($path)) {
-            $this->pathValidator->validate($path);
-        }
+        $this->pathValidator->validate($path);
 
-        return $this->codec->encode($path);
-    }
-
-    private function encodeParams(array $params): string
-    {
-        $normalized = $this->params->normalize($params);
-
-        return $this->codec->encodeParams($normalized);
+        return $path;
     }
 }

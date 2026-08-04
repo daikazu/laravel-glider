@@ -17,19 +17,21 @@ use Symfony\Component\HttpKernel\Exception\NotFoundHttpException;
 
 class GlideController
 {
-    public function __invoke(Request $request, Server $server, PresetPolicy $presets, string $encodedPath, string $encodedParams, string $extension): Response
+    public function __invoke(Request $request, Server $server, PresetPolicy $presets, string $path): Response
     {
         try {
-            $path = app(GliderService::class)->decodePath($encodedPath);
+            $parsed = app(GliderService::class)->parsePath($path);
         } catch (InvalidArgumentException) {
             // PathValidator rejects traversal/null-byte payloads by throwing;
             // that's an invalid request (400), not a server error (500).
             abort(400);
         }
 
-        abort_if($path === '', 404);
-        $params = Glider::decodeParams($encodedParams);
-        $params['fm'] ??= $extension;
+        abort_if($parsed === null, 404);
+
+        $path = $parsed['path'];
+        $params = $parsed['params'];
+        $params['fm'] ??= $parsed['extension'];
 
         abort_if(config('glider.restrict_to_presets') && ! $presets->allows($params), 403);
 

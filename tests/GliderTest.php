@@ -23,43 +23,41 @@ beforeEach(function () {
     ]);
 });
 
-test('it decodes params correctly', function () {
-    $service = app(Glider::class);
-    $params = ['w' => 400, 'h' => 300, 'q' => 85];
+/**
+ * Round-trip helper: parse a generated glider URL the way the controller
+ * route would (prefix check + segment decode + parseRelativePath).
+ */
+function parseGliderUrl(string $url): ?array
+{
+    return app(UrlGenerator::class)->parseUrl($url);
+}
 
-    // Encode params
-    $json = json_encode($params);
-    $encoded = rtrim(strtr(base64_encode($json), '+/', '-_'), '=');
+test('it parses a generated url back into path, params, and extension', function () {
+    config(['glider.secure' => false]);
 
-    // Decode and verify
-    $decoded = $service->decodeParams($encoded);
+    $parsed = parseGliderUrl(app(Glider::class)->url('images/photo.jpg', ['w' => 400, 'h' => 300]));
 
-    expect($decoded)->toBe($params);
+    expect($parsed)->not->toBeNull()
+        ->and($parsed['path'])->toBe('images/photo.jpg')
+        ->and($parsed['params']['w'])->toBe('400')
+        ->and($parsed['params']['h'])->toBe('300')
+        ->and($parsed['extension'])->toBe('webp');
 });
 
-test('it returns empty array for invalid params', function () {
+test('parsePath returns null for malformed relative paths', function () {
     $service = app(Glider::class);
 
-    expect($service->decodeParams('invalid-base64'))->toBe([]);
+    expect($service->parsePath('no-token-here.webp'))->toBeNull()
+        ->and($service->parsePath('a/b~!!!invalid!!!.webp'))->toBeNull();
 });
 
-test('it decodes path correctly', function () {
-    $service = app(Glider::class);
-    $path = 'images/photo.jpg';
+test('urls are human readable: path and name stay visible', function () {
+    config(['glider.secure' => false]);
 
-    // Encode path
-    $encoded = rtrim(strtr(base64_encode($path), '+/', '-_'), '=');
+    $url = app(Glider::class)->url('coins/themes/memorial/hero.jpg', ['w' => 333]);
 
-    // Decode and verify
-    $decoded = $service->decodePath($encoded);
-
-    expect($decoded)->toBe($path);
-});
-
-test('it returns empty string for invalid path', function () {
-    $service = app(Glider::class);
-
-    expect($service->decodePath('!!!invalid!!!'))->toBe('');
+    expect($url)->toContain('/img/coins/themes/memorial/hero~')
+        ->and($url)->toEndWith('.webp');
 });
 
 test('it gets local filesystem for local paths', function () {
@@ -228,76 +226,47 @@ test('it handles numeric breakpoints', function () {
         ->and($urls[1024]['min_width'])->toBe(1024);
 });
 
-test('it encodes and decodes paths symmetrically', function () {
-    $service = app(Glider::class);
-    $urlGenerator = app(UrlGenerator::class);
-    $originalPath = 'images/subfolder/photo.jpg';
+test('it round-trips paths through url generation and parsing', function () {
+    config(['glider.secure' => false]);
 
-    // Use reflection to access private method
-    $reflection = new ReflectionClass($urlGenerator);
-    $encodeMethod = $reflection->getMethod('encodePath');
-    $encodeMethod->setAccessible(true);
+    $parsed = parseGliderUrl(app(Glider::class)->url('images/subfolder/photo.jpg', ['w' => 400]));
 
-    $encoded = $encodeMethod->invoke($urlGenerator, $originalPath);
-    $decoded = $service->decodePath($encoded);
-
-    expect($decoded)->toBe($originalPath);
+    expect($parsed['path'])->toBe('images/subfolder/photo.jpg');
 });
 
-test('it removes query parameters from path when encoding', function () {
-    $service = app(Glider::class);
-    $urlGenerator = app(UrlGenerator::class);
-    $pathWithQuery = 'images/photo.jpg?version=123';
+test('it removes query parameters from local paths when building urls', function () {
+    config(['glider.secure' => false]);
 
-    // Use reflection to access private method
-    $reflection = new ReflectionClass($urlGenerator);
-    $encodeMethod = $reflection->getMethod('encodePath');
-    $encodeMethod->setAccessible(true);
+    $parsed = parseGliderUrl(app(Glider::class)->url('images/photo.jpg?version=123', ['w' => 400]));
 
-    $encoded = $encodeMethod->invoke($urlGenerator, $pathWithQuery);
-    $decoded = $service->decodePath($encoded);
-
-    expect($decoded)->toBe('images/photo.jpg');
+    expect($parsed['path'])->toBe('images/photo.jpg');
 });
 
-test('it encodes and decodes params symmetrically', function () {
-    $service = app(Glider::class);
-    $urlGenerator = app(UrlGenerator::class);
+test('it round-trips params merged with server defaults', function () {
+    config(['glider.secure' => false]);
+
     $originalParams = ['w' => 400, 'h' => 300, 'fit' => 'crop', 'q' => 85];
+    $parsed = parseGliderUrl(app(Glider::class)->url('images/photo.jpg', $originalParams));
+    $params = $parsed['params'];
+    $params['fm'] ??= $parsed['extension'];
 
-    // Use reflection to access private method
-    $reflection = new ReflectionClass($urlGenerator);
-    $encodeMethod = $reflection->getMethod('encodeParams');
-    $encodeMethod->setAccessible(true);
-
-    $encoded = $encodeMethod->invoke($urlGenerator, $originalParams);
-    $decoded = $service->decodeParams($encoded);
-
-    // encodeParams merges with server defaults, so we need to expect those defaults
-    // Params are converted to strings during encoding
+    // The token merges server defaults; values are stringified and sorted
     $expectedParams = array_map('strval', $originalParams);
     $expectedParams['fm'] = 'webp'; // Default from config
     ksort($expectedParams);
+    ksort($params);
 
-    expect($decoded)->toBe($expectedParams);
+    expect($params)->toBe($expectedParams);
 });
 
-test('it removes signature and p params when encoding', function () {
-    $service = app(Glider::class);
-    $urlGenerator = app(UrlGenerator::class);
-    $params = ['w' => 400, 's' => 'signature', 'p' => 'preset'];
+test('it removes signature and p params from the url token', function () {
+    config(['glider.secure' => false]);
 
-    // Use reflection to access private method
-    $reflection = new ReflectionClass($urlGenerator);
-    $encodeMethod = $reflection->getMethod('encodeParams');
-    $encodeMethod->setAccessible(true);
+    $parsed = parseGliderUrl(app(Glider::class)->url('images/photo.jpg', ['w' => 400, 's' => 'signature', 'p' => 'preset']));
 
-    $encoded = $encodeMethod->invoke($urlGenerator, $params);
-    $decoded = $service->decodeParams($encoded);
-
-    expect($decoded)->not->toHaveKey('s')
-        ->and($decoded)->not->toHaveKey('p')
-        ->and($decoded)->toHaveKey('w');
+    expect($parsed['params'])->not->toHaveKey('s')
+        ->and($parsed['params'])->not->toHaveKey('p')
+        ->and($parsed['params'])->toHaveKey('w');
 });
 
 test('it does not add signature when secure is false', function () {
@@ -319,77 +288,28 @@ test('it adds signature when secure is true', function () {
     expect($url)->toContain('?s=');
 });
 
-test('it encodes and decodes paths with accented characters', function () {
-    $service = app(Glider::class);
-    $urlGenerator = app(UrlGenerator::class);
-
-    $testPaths = [
-        'café-image.jpg',
-        'ñoño.jpg',
-        'über-foto.jpg',
-        'naïve.jpg',
-        'images/résumé.jpg',
-    ];
-
-    foreach ($testPaths as $originalPath) {
-        // Use reflection to access private method
-        $reflection = new ReflectionClass($urlGenerator);
-        $encodeMethod = $reflection->getMethod('encodePath');
-        $encodeMethod->setAccessible(true);
-
-        $encoded = $encodeMethod->invoke($urlGenerator, $originalPath);
-        $decoded = $service->decodePath($encoded);
-
-        expect($decoded)->toBe($originalPath, "Failed for path: {$originalPath}");
-    }
-});
-
-test('it encodes and decodes paths with apostrophes', function () {
-    $service = app(Glider::class);
-    $urlGenerator = app(UrlGenerator::class);
-    $originalPath = "l'apostrophe.jpg";
-
-    // Use reflection to access private method
-    $reflection = new ReflectionClass($urlGenerator);
-    $encodeMethod = $reflection->getMethod('encodePath');
-    $encodeMethod->setAccessible(true);
-
-    $encoded = $encodeMethod->invoke($urlGenerator, $originalPath);
-    $decoded = $service->decodePath($encoded);
-
-    expect($decoded)->toBe($originalPath);
-});
-
-test('it generates valid URLs for files with accented characters', function () {
+test('it round-trips paths with accented characters and apostrophes', function (string $originalPath) {
     config(['glider.secure' => false]);
 
-    $service = app(Glider::class);
-    $url = $service->getUrl('café-image.jpg', ['w' => 400]);
+    $parsed = parseGliderUrl(app(Glider::class)->url($originalPath, ['w' => 400]));
 
-    expect($url)->toContain('/img/');
+    expect($parsed)->not->toBeNull()
+        ->and($parsed['path'])->toBe($originalPath);
+})->with([
+    'café-image.jpg',
+    'ñoño.jpg',
+    'über-foto.jpg',
+    'naïve.jpg',
+    'images/résumé.jpg',
+    "l'apostrophe.jpg",
+]);
 
-    // Extract encoded path from URL and verify it decodes correctly
-    preg_match('#/img/([^/]+)/#', $url, $matches);
-    expect($matches)->toHaveCount(2);
-
-    $decoded = $service->decodePath($matches[1]);
-    expect($decoded)->toBe('café-image.jpg');
-});
-
-test('it generates valid URLs for files with apostrophes', function () {
+test('it percent-encodes special characters in generated urls', function () {
     config(['glider.secure' => false]);
 
-    $service = app(Glider::class);
-    $url = $service->getUrl("l'apostrophe.jpg", ['w' => 400]);
+    $url = app(Glider::class)->getUrl('café-image.jpg', ['w' => 400]);
 
-    expect($url)->toContain('/img/');
-
-    // Extract encoded path from URL and verify it decodes correctly
-    preg_match('#/img/([^/]+)/#', $url, $matches);
-    expect($matches)->toHaveCount(2);
-
-    $decoded = $service->decodePath($matches[1]);
-    expect($decoded)->toBe("l'apostrophe.jpg");
+    expect($url)->toContain('/img/caf%C3%A9-image~');
 });
 
 test('it can serve image with accented characters via HTTP', function () {
@@ -467,13 +387,9 @@ test('it maps preset parameter to p for League/Glide compatibility', function ()
     // The URL should be generated (preset should be resolved by League/Glide)
     expect($url)->toContain('/img/');
 
-    // Extract encoded params and verify preset was applied
-    preg_match('#/img/[^/]+/([^.]+)\.#', $url, $matches);
-    expect($matches)->toHaveCount(2);
+    $decoded = parseGliderUrl($url)['params'];
 
-    $decoded = $service->decodeParams($matches[1]);
-
-    // The preset params should be in the encoded params
+    // The preset params should be in the token params
     expect($decoded)->toHaveKey('w')
         ->and($decoded['w'])->toBe('150')
         ->and($decoded)->toHaveKey('h')
@@ -494,10 +410,7 @@ test('preset parameters can be overridden by explicit params', function () {
     // User passes preset plus an override
     $url = $service->getUrl('test.jpg', ['preset' => 'thumb', 'w' => 200]);
 
-    preg_match('#/img/[^/]+/([^.]+)\.#', $url, $matches);
-    expect($matches)->toHaveCount(2);
-
-    $decoded = $service->decodeParams($matches[1]);
+    $decoded = parseGliderUrl($url)['params'];
 
     // The explicit w=200 should override preset's w=150
     expect($decoded['w'])->toBe('200')
@@ -528,12 +441,9 @@ test('preset parameter is not included in encoded URL params', function () {
     $service = app(Glider::class);
     $url = $service->getUrl('test.jpg', ['preset' => 'thumb']);
 
-    preg_match('#/img/[^/]+/([^.]+)\.#', $url, $matches);
-    expect($matches)->toHaveCount(2);
+    $decoded = parseGliderUrl($url)['params'];
 
-    $decoded = $service->decodeParams($matches[1]);
-
-    // Neither 'preset' nor 'p' should be in the final encoded params
+    // Neither 'preset' nor 'p' should be in the final token params
     expect($decoded)->not->toHaveKey('preset')
         ->and($decoded)->not->toHaveKey('p');
 });

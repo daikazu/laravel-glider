@@ -111,19 +111,18 @@ describe('Path Traversal Security', function () {
         }
     });
 
-    it('validates paths after decoding from base64', function () {
+    it('validates parsed source paths from crafted url paths', function () {
         $service = app(Glider::class);
 
-        // Create a malicious path
-        $maliciousPath = '../../etc/passwd';
-        $encoded = rtrim(strtr(base64_encode($maliciousPath), '+/', '-_'), '=');
+        // A crafted relative URL path whose parsed source resolves to a
+        // traversal payload: dirs '../..', name 'passwd', se from the token
+        $token = rtrim(strtr(base64_encode(http_build_query(['se' => 'jpg', 'w' => '10'])), '+/', '-_'), '=');
 
-        // Try to decode it
-        expect(fn () => $service->decodePath($encoded))
+        expect(fn () => $service->parsePath("../../etc/passwd~{$token}.jpg"))
             ->toThrow(InvalidArgumentException::class, 'directory traversal');
     });
 
-    it('allows valid paths after decoding', function () {
+    it('allows valid paths when parsing crafted url paths', function () {
         // Ensure the configured source directory exists for realpath() validation
         $sourcePath = config('glider.source');
         if (! is_dir($sourcePath)) {
@@ -132,10 +131,20 @@ describe('Path Traversal Security', function () {
 
         $service = app(Glider::class);
 
-        $validPath = 'images/test.jpg';
-        $encoded = rtrim(strtr(base64_encode($validPath), '+/', '-_'), '=');
+        $token = rtrim(strtr(base64_encode(http_build_query(['se' => 'jpg', 'w' => '10'])), '+/', '-_'), '=');
+        $parsed = $service->parsePath("images/test~{$token}.jpg");
 
-        $decoded = $service->decodePath($encoded);
-        expect($decoded)->toBe($validPath);
+        expect($parsed)->not->toBeNull()
+            ->and($parsed['path'])->toBe('images/test.jpg');
+    });
+
+    it('rejects traversal smuggled through the source-extension token key', function () {
+        $service = app(Glider::class);
+
+        // `se` reconstructs the source filename — a crafted token must not
+        // be able to smuggle traversal or separators through it
+        $token = rtrim(strtr(base64_encode('se=jpg%2F..%2F..%2Fsecret&w=10'), '+/', '-_'), '=');
+
+        expect($service->parsePath("images/test~{$token}.jpg"))->toBeNull();
     });
 });

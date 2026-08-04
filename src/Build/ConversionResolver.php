@@ -8,6 +8,7 @@ use Daikazu\LaravelGlider\Glider;
 use Daikazu\LaravelGlider\Support\BackgroundBreakpoints;
 use Daikazu\LaravelGlider\Support\GlideAttributes;
 use Daikazu\LaravelGlider\Support\SrcsetCalculator;
+use Daikazu\LaravelGlider\Support\UrlGenerator;
 use Illuminate\Support\Str;
 
 /**
@@ -30,6 +31,7 @@ final readonly class ConversionResolver
 {
     public function __construct(
         private Glider $glider,
+        private UrlGenerator $urlGenerator,
         private SrcsetCalculator $srcsetCalculator,
         private BackgroundBreakpoints $backgroundBreakpoints,
     ) {}
@@ -107,65 +109,30 @@ final readonly class ConversionResolver
      * Round-trips $inputParams through the real URL-generation and
      * decoding pipeline: build the URL exactly as a component would
      * (`Glider::url()` — which maps preset -> p, expands presets/defaults,
-     * and resolves the redundant-fm/extension quirk), then decode the
-     * resulting URL's encoded params and extension and apply
-     * `$params['fm'] ??= $extension` exactly as `GlideController` does.
+     * and resolves the redundant-fm/extension quirk), then parse the
+     * resulting URL exactly as `GlideController` would (including the
+     * `$params['fm'] ??= $extension` step).
      *
      * Returns null when the usage wouldn't hit the Glide route at all
-     * (e.g. a direct-serve passthrough for an unmanipulated local image),
-     * since there is then nothing to prebuild.
+     * (e.g. a direct-serve passthrough for an unmanipulated local image) —
+     * `UrlGenerator::parseUrl()` anchors on the route prefix AND requires
+     * the `name~token.ext` shape, so direct-serve URLs can't false-positive.
      *
      * @param  array<string, mixed>  $inputParams
      * @return array<string, mixed>|null
      */
     private function canonicalize(string $path, array $inputParams): ?array
     {
-        $url = $this->glider->url($path, $inputParams);
-        $urlPath = (string) parse_url($url, PHP_URL_PATH);
+        $parsed = $this->urlGenerator->parseUrl($this->glider->url($path, $inputParams));
 
-        if (! str_starts_with($urlPath, $this->routePrefix())) {
+        if ($parsed === null) {
             return null;
         }
 
-        $filename = basename($urlPath);
-        $dotPosition = strrpos($filename, '.');
-
-        if ($dotPosition === false) {
-            return null;
-        }
-
-        $encodedParams = substr($filename, 0, $dotPosition);
-        $extension = substr($filename, $dotPosition + 1);
-
-        $params = $this->glider->decodeParams($encodedParams);
-        $params['fm'] ??= $extension;
+        $params = $parsed['params'];
+        $params['fm'] ??= $parsed['extension'];
 
         return $params;
-    }
-
-    /**
-     * The static path prefix of the actual `glider` route (e.g. `/img/`),
-     * derived from the route itself rather than reconstructed from
-     * `glider.base_url` config. A naive substring/config-based check (e.g.
-     * `str_contains($urlPath, '/img/')`) false-positives whenever a
-     * direct-serve URL merely *contains* that segment somewhere in its
-     * path — e.g. a source image literally named `img/plain.jpg` served
-     * from `storage/img/plain.jpg` — so the check must be anchored to the
-     * start of the path and derived from the real route.
-     */
-    private function routePrefix(): string
-    {
-        $suffix = 'probe/probe.jpg';
-
-        $probePath = (string) parse_url(route('glider', [
-            'encoded_path'   => 'probe',
-            'encoded_params' => 'probe',
-            'extension'      => 'jpg',
-        ], false), PHP_URL_PATH);
-
-        return str_ends_with($probePath, $suffix)
-            ? substr($probePath, 0, -strlen($suffix))
-            : $probePath;
     }
 
     /**
