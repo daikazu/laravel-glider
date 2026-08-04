@@ -326,8 +326,29 @@ php artisan glider:convert --backup
 
 Only tags with a statically-resolvable `src` are converted — plain paths and
 `asset('literal')` wrappers. Dynamic sources (`:src` bindings, Blade echoes,
-concatenated `asset()` expressions) are left untouched. All other attributes
-survive with their order, names, and quoting intact.
+`url()`/`Vite::asset()`/`Storage::url()` helpers, concatenated `asset()`
+expressions) are left untouched. All other attributes survive with their
+order, names, and quoting intact.
+
+Use `--image-path` to declare which public-URL prefix maps to your glider
+`source` root — that prefix is stripped from converted srcs (leading slashes
+don't matter on either side):
+
+```bash
+# Default: /images/ URLs map to the source root (e.g. public/images
+# symlinked to resources/assets) — asset('images/theme/logo.png')
+# becomes src="theme/logo.png"
+php artisan glider:convert --dry-run
+
+# Your public URLs use a different prefix
+php artisan glider:convert --dry-run --image-path=assets/
+
+# Your source root actually contains the prefix folder — strip nothing
+php artisan glider:convert --dry-run --image-path=
+```
+
+Always check the `--dry-run` preview: converted srcs must resolve relative
+to your configured `glider.source`.
 
 See [Prebuilding the Cache](#prebuilding-the-cache-gliderbuild) below for details on `glider:build`.
 

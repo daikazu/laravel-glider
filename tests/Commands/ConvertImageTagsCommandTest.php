@@ -58,6 +58,36 @@ it('leaves external URLs as-is', function () {
         ->toBe('<x-glider-img src="https://example.com/images/x.jpg" alt="x" />');
 });
 
+it('strips a custom --image-path prefix', function () {
+    File::put($this->viewsDir . '/page.blade.php', '<img src="/assets/photos/a.jpg">');
+
+    $this->artisan('glider:convert', ['--path' => $this->viewsDir, '--image-path' => 'assets/'])
+        ->expectsConfirmation('Do you want to continue?', 'yes')
+        ->assertSuccessful();
+
+    expect(File::get($this->viewsDir . '/page.blade.php'))
+        ->toBe('<x-glider-img src="photos/a.jpg" />');
+});
+
+it('strips nothing when --image-path is empty', function () {
+    File::put($this->viewsDir . '/page.blade.php', '<img src="/images/a.jpg">');
+
+    $this->artisan('glider:convert', ['--path' => $this->viewsDir, '--image-path' => ''])
+        ->expectsConfirmation('Do you want to continue?', 'yes')
+        ->assertSuccessful();
+
+    expect(File::get($this->viewsDir . '/page.blade.php'))
+        ->toBe('<x-glider-img src="images/a.jpg" />');
+});
+
+it('leaves non-asset blade helper srcs untouched', function (string $blade) {
+    expect(convertFixture($blade))->toBe($blade);
+})->with([
+    'url helper'  => '<img src="{{ url(\'images/x.jpg\') }}" alt="x">',
+    'vite asset'  => '<img src="{{ Vite::asset(\'resources/images/x.jpg\') }}" alt="x">',
+    'storage url' => '<img src="{{ Storage::url(\'x.jpg\') }}" alt="x">',
+]);
+
 it('preserves hyphenated, boolean, and blade-expression attributes', function () {
     $result = convertFixture('<img src="/images/a.jpg" data-lazy="1" aria-label="photo" hidden alt="{{ $style[\'name\'] }}">');
 
