@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 use Daikazu\LaravelGlider\Components\ImgResponsive;
 use Daikazu\LaravelGlider\Facades\Glider;
+use Daikazu\LaravelGlider\Support\UrlGenerator;
 use Illuminate\View\ComponentAttributeBag;
 use Mockery as m;
 
@@ -146,20 +147,20 @@ it('merges glide attributes correctly in srcset generation', function () {
     Glider::swap($originalInstance);
 });
 
-it('uses default quality and format when not overridden', function () {
+it('uses default quality and format only when not overridden', function () {
     $originalInstance = Glider::getFacadeRoot();
 
     $mockService = m::mock();
     $mockService->shouldReceive('getUrl')
         ->once()
         ->andReturnUsing(function ($src, $params) {
-            // array_merge($glideAttributes, ['q' => 85, 'fm' => 'webp', 'w' => $size])
-            // means the defaults on the right override the glide-* attributes.
-            expect($params['q'])->toBe(85);
-            expect($params['fm'])->toBe('webp');
+            // array_merge(['q' => 85, 'fm' => 'webp'], $glideAttributes, ['w' => $size])
+            // means q/fm are defaults the user's glide-* attributes override.
+            expect($params['q'])->toBe('95');
+            expect($params['fm'])->toBe('png');
             expect($params['w'])->toBe(400);
 
-            return 'http://example.com/img/test.jpg?q=85&fm=webp&w=400';
+            return 'http://example.com/img/test.jpg?q=95&fm=png&w=400';
         });
 
     Glider::swap($mockService);
@@ -170,7 +171,7 @@ it('uses default quality and format when not overridden', function () {
     ]);
     $srcset = $component->srcset();
 
-    expect($srcset)->toBe('http://example.com/img/test.jpg?q=85&fm=webp&w=400 400w');
+    expect($srcset)->toBe('http://example.com/img/test.jpg?q=95&fm=png&w=400 400w');
 
     Glider::swap($originalInstance);
 });
@@ -233,11 +234,11 @@ it('lets glide-q and glide-fm override the srcset defaults', function () {
     config()->set('glider.source', __DIR__ . '/../fixtures');
     config()->set('glider.secure', false);
 
-    $component = new Daikazu\LaravelGlider\Components\ImgResponsive('test-tiny.jpg', '10');
-    $component->attributes = new Illuminate\View\ComponentAttributeBag(['glide-q' => '50', 'glide-fm' => 'png']);
+    $component = new ImgResponsive('test-tiny.jpg', '10');
+    $component->attributes = new ComponentAttributeBag(['glide-q' => '50', 'glide-fm' => 'png']);
 
     $srcset = $component->srcset();
-    $parsed = app(Daikazu\LaravelGlider\Support\UrlGenerator::class)->parseUrl(explode(' ', (string) $srcset)[0]);
+    $parsed = app(UrlGenerator::class)->parseUrl(explode(' ', (string) $srcset)[0]);
     $params = $parsed['params'];
     $params['fm'] ??= $parsed['extension'];
 

@@ -95,9 +95,8 @@ final readonly class UrlGenerator
     {
         $sourcePath = $this->normalizeSourcePath($path);
         $resolved = $this->params->routeParams($sourcePath, $params);
-        $tokenParams = $this->params->normalize($resolved['params']);
 
-        return $this->codec->buildRelativePath($sourcePath, $tokenParams, $resolved['extension']);
+        return $this->codec->buildRelativePath($sourcePath, $resolved['params'], $resolved['extension']);
     }
 
     private function prefix(): string

@@ -3,6 +3,20 @@
 declare(strict_types=1);
 
 use Daikazu\LaravelGlider\Build\BladeUsage;
+
+/**
+ * Job params arrive in controller-restoration order (fm appended last);
+ * comparisons only care about the key-value pairs.
+ */
+function canonicalizeJobs(array $jobs): array
+{
+    return array_map(function (array $job): array {
+        ksort($job['params']);
+
+        return $job;
+    }, $jobs);
+}
+
 use Daikazu\LaravelGlider\Build\ConversionResolver;
 
 beforeEach(function () {
@@ -19,7 +33,7 @@ it('resolves an img usage to one job with the preset fully expanded', function (
         new BladeUsage('img', 'hero.jpg', ['glide-w' => '1200', 'glide-preset' => 'thumbnail'], 'a.blade.php')
     );
 
-    expect($jobs)->toBe([[
+    expect(canonicalizeJobs($jobs))->toBe([[
         'path'   => 'hero.jpg',
         'params' => ['fit' => 'crop', 'fm' => 'webp', 'h' => '150', 'q' => '90', 'w' => '1200'],
     ]]);
@@ -30,7 +44,7 @@ it('resolves a bg usage to one job with glide- prefix stripped and defaults merg
         new BladeUsage('bg', 'banner.jpg', ['glide-fit' => 'crop'], 'a.blade.php')
     );
 
-    expect($jobs)->toBe([[
+    expect(canonicalizeJobs($jobs))->toBe([[
         'path'   => 'banner.jpg',
         'params' => ['fit' => 'crop', 'fm' => 'webp', 'q' => '85'],
     ]]);
@@ -41,7 +55,7 @@ it('resolves a url usage to one job with attributes as-is plus defaults merged i
         new BladeUsage('url', 'inline.jpg', ['w' => '400', 'fm' => 'webp'], 'a.blade.php')
     );
 
-    expect($jobs)->toBe([[
+    expect(canonicalizeJobs($jobs))->toBe([[
         'path'   => 'inline.jpg',
         'params' => ['fm' => 'webp', 'q' => '85', 'w' => '400'],
     ]]);
@@ -66,7 +80,7 @@ it('resolves img-responsive with a preset to jobs with the preset fully expanded
         new BladeUsage('img-responsive', 'test-tiny.jpg', ['glide-preset' => 'thumbnail', 'srcset-widths' => '10'], 'a.blade.php')
     );
 
-    expect($jobs)->toBe([
+    expect(canonicalizeJobs($jobs))->toBe([
         [
             'path' => 'test-tiny.jpg',
             // Explicit srcset `w`/`q`/`fm` override the preset's values.
@@ -130,8 +144,8 @@ it('mirrors srcset q/fm overrides in img-responsive build candidates', function 
     // that exactly or the cache-equivalence invariant breaks.
     config()->set('glider.source', __DIR__ . '/../fixtures');
 
-    $jobs = app(Daikazu\LaravelGlider\Build\ConversionResolver::class)->jobs(
-        new Daikazu\LaravelGlider\Build\BladeUsage('img-responsive', 'test-tiny.jpg', ['glide-q' => '50', 'glide-fm' => 'png', 'srcset-widths' => '10'], 'a.blade.php')
+    $jobs = app(ConversionResolver::class)->jobs(
+        new BladeUsage('img-responsive', 'test-tiny.jpg', ['glide-q' => '50', 'glide-fm' => 'png', 'srcset-widths' => '10'], 'a.blade.php')
     );
 
     $widthJob = collect($jobs)->first(fn (array $job): bool => ($job['params']['w'] ?? null) === '10');

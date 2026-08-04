@@ -35,6 +35,17 @@ final readonly class ParamResolver
     }
 
     /**
+     * Resolve the output extension and the final URL-token params in ONE
+     * getAllParams pass. The single pass matters: an earlier two-pass
+     * implementation stripped a redundant fm and then re-normalized, which
+     * re-merged the config default fm over the user's explicit choice —
+     * so glide-fm="png" served webp.
+     *
+     * fm is dropped from the token only when the controller's
+     * `$params['fm'] ??= $extension` restoration reproduces it exactly
+     * (which also means pjpg stays in the token, keeping progressive jpeg
+     * intact through the round-trip).
+     *
      * @return array{extension: string, params: array}
      */
     public function routeParams(string $path, array $params): array
@@ -42,23 +53,18 @@ final readonly class ParamResolver
         $pathForExt = (string) parse_url($path, PHP_URL_PATH);
         $ext = strtolower(in_array(pathinfo($pathForExt, PATHINFO_EXTENSION), ['', '0'], true) ? '' : pathinfo($pathForExt, PATHINFO_EXTENSION));
 
-        // Merge with server defaults/presets so fm from presets/defaults is considered
-        $resolvedParams = $params;
-        if ($this->app->bound(Server::class)) {
-            $resolvedParams = $this->app->make(Server::class)->getAllParams($params);
-        }
+        $resolved = $this->normalize($params);
 
-        $format = $resolvedParams['fm'] ?? ($ext !== '' ? $ext : null);
+        $format = $resolved['fm'] ?? ($ext !== '' ? $ext : null);
         $extension = $format === 'pjpg' ? 'jpg' : ($format ?? 'jpg');
 
-        // If fm is redundant (same as chosen extension), avoid including it explicitly in the URL params
-        if (array_key_exists('fm', $params) && ($params['fm'] === $extension || $params['fm'] === 'pjpg' && $extension === 'jpg')) {
-            unset($params['fm']);
+        if (($resolved['fm'] ?? null) === $extension) {
+            unset($resolved['fm']);
         }
 
         return [
             'extension' => $extension,
-            'params'    => $params,
+            'params'    => $resolved,
         ];
     }
 }
