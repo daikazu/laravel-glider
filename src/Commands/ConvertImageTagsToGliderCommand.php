@@ -141,57 +141,86 @@ class ConvertImageTagsToGliderCommand extends Command
      */
     private function convertImageTags(string $content, bool $useResponsive, string $imagePath): string
     {
-        // Pattern to match <img> tags with src attribute, handling nested quotes in Blade syntax
-        $pattern = '/<img\s+([^>]*?)src=(["\'])((?:(?!\2).)*)\2([^>]*?)>/i';
+        // Match whole <img> tags; quoted sections may contain ">" safely.
+        $pattern = '/<img\b((?:[^>"\']|"[^"]*"|\'[^\']*\')*?)\/?>/i';
 
-        return preg_replace_callback($pattern, function (array $matches) use ($useResponsive, $imagePath): string {
-            $beforeSrc = trim($matches[1]);
-            $srcValue = $matches[3]; // The actual src value is now in group 3
-            $afterSrc = trim($matches[4]); // After src attributes are in group 4
+        $result = preg_replace_callback($pattern, function (array $matches) use ($useResponsive, $imagePath): string {
+            $attributes = $this->parseAttributes($matches[1]);
 
-            // Extract all attributes from the original img tag
-            $allAttributes = $this->extractAllAttributes($beforeSrc . ' ' . $afterSrc);
+            $src = null;
+            foreach ($attributes as $attribute) {
+                if ($attribute['name'] === ':src') {
+                    return $matches[0]; // dynamic binding — leave untouched
+                }
 
-            // Clean up the src value
-            $cleanSrc = $this->cleanSrcValue($srcValue, $imagePath);
-
-            // Build the glider component with all original attributes preserved
-            $componentType = $useResponsive ? 'x-glider-img-responsive' : 'x-glider-img';
-
-            // Start with the cleaned src
-            $attributes = ['src="' . $cleanSrc . '"'];
-
-            // Add all other original attributes
-            foreach ($allAttributes as $attr) {
-                if (! str_starts_with(strtolower($attr), 'src=')) {
-                    $attributes[] = $attr;
+                if (strtolower($attribute['name']) === 'src') {
+                    $src = $attribute['value'];
                 }
             }
 
-            $result = '<' . $componentType . ' ' . implode(' ', $attributes) . ' />';
+            // No literal, statically-resolvable src: leave the tag untouched.
+            // Blade-echo srcs are dynamic, except a plain asset() wrapper,
+            // which cleanSrcValue() knows how to unwrap.
+            if ($src === null || (str_contains($src, '{{') && preg_match('/asset\(["\'](.+?)["\']/', $src) !== 1)) {
+                return $matches[0];
+            }
 
-            // Track this change
+            $cleanSrc = $this->cleanSrcValue($src, $imagePath);
+            $componentType = $useResponsive ? 'x-glider-img-responsive' : 'x-glider-img';
+
+            // src first, every other attribute in original order and quoting
+            // that survives its content (values may hold the other quote type).
+            $parts = ['src="' . $cleanSrc . '"'];
+
+            foreach ($attributes as $attribute) {
+                if (strtolower($attribute['name']) === 'src') {
+                    continue;
+                }
+
+                if ($attribute['value'] === null) {
+                    $parts[] = $attribute['name']; // boolean attribute
+                    continue;
+                }
+
+                $quote = str_contains($attribute['value'], '"') ? "'" : '"';
+                $parts[] = $attribute['name'] . '=' . $quote . $attribute['value'] . $quote;
+            }
+
+            $converted = '<' . $componentType . ' ' . implode(' ', $parts) . ' />';
+
             $this->totalChanges[] = [
                 'from' => $matches[0],
-                'to'   => $result,
+                'to'   => $converted,
             ];
 
-            return $result;
+            return $converted;
         }, $content);
+
+        return $result ?? $content;
     }
 
     /**
-     * Extract all attributes from the attribute string
+     * Parse a tag's attribute blob preserving order, hyphenated/bound names,
+     * boolean attributes, and values containing the other quote type.
+     *
+     * @return list<array{name: string, value: ?string}>
      */
-    private function extractAllAttributes(string $attributeString): array
+    private function parseAttributes(string $attributeString): array
     {
-        $attributes = [];
-        $pattern = '/(\w+)=["\']([^"\']*?)["\']/';
+        preg_match_all(
+            '/(?<name>[:@a-zA-Z0-9_.-]+)(?:\s*=\s*(?:"(?<dq>[^"]*)"|\'(?<sq>[^\']*)\'|(?<uq>[^\s"\'>]+)))?/',
+            $attributeString,
+            $matches,
+            PREG_SET_ORDER | PREG_UNMATCHED_AS_NULL
+        );
 
-        preg_match_all($pattern, $attributeString, $matches, PREG_SET_ORDER);
+        $attributes = [];
 
         foreach ($matches as $match) {
-            $attributes[] = $match[1] . '="' . $match[2] . '"';
+            $attributes[] = [
+                'name'  => $match['name'],
+                'value' => $match['dq'] ?? $match['sq'] ?? $match['uq'] ?? null,
+            ];
         }
 
         return $attributes;
