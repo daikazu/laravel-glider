@@ -315,10 +315,19 @@ one independently.
 php artisan glider:build
 ```
 
-**Convert HTML img tags to components (WIP):**
+**Convert HTML img tags to components:**
 ```bash
+# Always preview first — this command rewrites your Blade files
 php artisan glider:convert-img-tags --dry-run
+
+# Apply (asks for confirmation; --backup creates timestamped copies first)
+php artisan glider:convert-img-tags --backup
 ```
+
+Only tags with a statically-resolvable `src` are converted — plain paths and
+`asset('literal')` wrappers. Dynamic sources (`:src` bindings, Blade echoes,
+concatenated `asset()` expressions) are left untouched. All other attributes
+survive with their order, names, and quoting intact.
 
 See [Prebuilding the Cache](#prebuilding-the-cache-gliderbuild) below for details on `glider:build`.
 
