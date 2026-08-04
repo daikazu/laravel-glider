@@ -66,7 +66,7 @@ The cache directory is created automatically with `.gitignore` added.
 ### Background Image
 
 ```html
-<x-glider-bg src="banner.jpg" preset="hero" class="hero-section">
+<x-glider-bg src="banner.jpg" glide-w="1440" glide-h="600" class="hero-section">
     <h1>Welcome</h1>
 </x-glider-bg>
 ```
@@ -238,20 +238,27 @@ Responsive image with automatic srcset generation.
 
 **Attributes:**
 - Same as `<x-glider-img>`
+- `srcset-widths` - Comma-separated list of widths to generate (e.g.
+  `"400,800,1200"`); when omitted, widths are calculated automatically
+  from the source image's dimensions and file size
 - Generates multiple sizes for different viewports
 
 ### `<x-glider-bg>`
 
-Background image container (non-responsive).
+Background image container (non-responsive). For breakpoint-based
+`background_presets`, use `<x-glider-bg-responsive>` — this component
+renders a single background image (use `glide-preset` for regular
+manipulation presets).
 
 **Attributes:**
 - `src` - Image path (required)
-- `preset` - Background preset name
 - `focal-point` - CSS positioning
 - `position` - CSS background-position (default: `center`)
 - `size` - CSS background-size (default: `cover`)
 - `repeat` - CSS background-repeat (default: `no-repeat`)
 - `attachment` - CSS background-attachment (default: `scroll`)
+- `lazy` - Emit `data-bg-lazy`/`data-bg-src` attributes for your lazy loader
+- `fallback` - Fallback image path (rendered as an inline style)
 - `class` - CSS classes for container
 - `glide-*` - Any Glide parameter
 
@@ -261,11 +268,13 @@ Responsive background with media queries.
 
 **Attributes:**
 - `src` - Image path (required)
-- `preset` - Background preset name
+- `preset` - Background preset name (from `background_presets` config)
 - `breakpoints` - Custom breakpoint array
 - `focal-point` - CSS positioning for all breakpoints
-- `lazy` - Enable lazy loading
-- `fallback` - Fallback image path
+- `position` / `size` / `repeat` / `attachment` - CSS background properties
+  (same defaults as `<x-glider-bg>`)
+- `lazy` - Emit `data-bg-lazy`/`data-bg-src`/`data-bg-srcset` attributes
+- `fallback` - Fallback image path (rendered as an inline style)
 - `glide-*` - Any Glide parameter
 
 ## Glide Parameters

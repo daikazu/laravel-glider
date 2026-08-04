@@ -1,7 +1,7 @@
 {{-- Generate background CSS (already sanitized in method) --}}
 {!! $generateBackgroundCSS() !!}
 
-<div {{ $attributes->except(['focal-point'])->merge(array_merge([
+<div {{ $attributes->except(['focal-point'])->whereDoesntStartWith('glide-')->merge(array_merge([
     'class' => $getCSSClass(),
     'data-glide-bg' => true,
     'data-glide-src' => e($src)
