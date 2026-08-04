@@ -240,18 +240,32 @@ class ConvertImageTagsToGliderCommand extends Command
     {
         // Remove asset() wrapper (only the pure string-literal form gets here)
         if (preg_match(self::STATIC_ASSET_PATTERN, trim($srcValue), $matches)) {
-            $path = $matches[2];
-            // Remove leading /images/ if present since glider handles this
-            return ltrim(str_replace($imagePath, '', $path), '/');
+            return $this->stripImagePathPrefix($matches[2], $imagePath);
         }
 
-        // Handle direct paths
-        if (str_starts_with($srcValue, $imagePath)) {
-            return ltrim(str_replace($imagePath, '', $srcValue), '/');
+        // External URLs stay as-is (glider supports remote sources directly)
+        if (str_contains($srcValue, '://')) {
+            return $srcValue;
         }
 
-        // Return as-is for external URLs or other formats
-        return $srcValue;
+        return $this->stripImagePathPrefix($srcValue, $imagePath);
+    }
+
+    /**
+     * Strip the public-URL prefix (--image-path) that maps to the glider
+     * source root, tolerating leading-slash differences on both sides:
+     * `/images/`, `images/`, `/images/x.jpg`, and `images/x.jpg` all align.
+     */
+    private function stripImagePathPrefix(string $path, string $imagePath): string
+    {
+        $path = ltrim($path, '/');
+        $prefix = trim($imagePath, '/');
+
+        if ($prefix !== '' && str_starts_with($path, $prefix . '/')) {
+            return substr($path, strlen($prefix) + 1);
+        }
+
+        return $path;
     }
 
     /**

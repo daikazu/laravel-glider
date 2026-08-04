@@ -36,6 +36,28 @@ it('strips an asset() wrapper from the src', function () {
         ->toBe('<x-glider-img src="logo.png" alt="Logo" />');
 });
 
+it('strips the image path prefix regardless of leading slashes', function (string $blade, string $expected) {
+    expect(convertFixture($blade))->toBe($expected);
+})->with([
+    'asset without leading slash' => [
+        '<img src="{{ asset(\'images/theme/logo-teejay-3d.png\') }}" alt="TJM Logo" aria-label="TJM Logo" class="max-h-20" />',
+        '<x-glider-img src="theme/logo-teejay-3d.png" alt="TJM Logo" aria-label="TJM Logo" class="max-h-20" />',
+    ],
+    'direct src without leading slash' => [
+        '<img src="images/a.jpg" alt="x">',
+        '<x-glider-img src="a.jpg" alt="x" />',
+    ],
+    'non-matching prefix keeps path' => [
+        '<img src="/uploads/b.jpg" alt="x">',
+        '<x-glider-img src="uploads/b.jpg" alt="x" />',
+    ],
+]);
+
+it('leaves external URLs as-is', function () {
+    expect(convertFixture('<img src="https://example.com/images/x.jpg" alt="x">'))
+        ->toBe('<x-glider-img src="https://example.com/images/x.jpg" alt="x" />');
+});
+
 it('preserves hyphenated, boolean, and blade-expression attributes', function () {
     $result = convertFixture('<img src="/images/a.jpg" data-lazy="1" aria-label="photo" hidden alt="{{ $style[\'name\'] }}">');
 
