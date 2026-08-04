@@ -50,9 +50,11 @@ it('uses the real src attribute, not data-src', function () {
 it('leaves dynamic sources untouched', function (string $blade) {
     expect(convertFixture($blade))->toBe($blade);
 })->with([
-    'bound src'      => '<img :src="$post->image" alt="x">',
-    'blade echo src' => '<img src="{{ $hero }}" alt="x">',
-    'no src'         => '<img alt="decorative">',
+    'bound src'          => '<img :src="$post->image" alt="x">',
+    'blade echo src'     => '<img src="{{ $hero }}" alt="x">',
+    'no src'             => '<img alt="decorative">',
+    'concatenated asset' => '<img src="{{ asset(\'images/\' . $item[\'image\']) }}" alt="x">',
+    'asset of variable'  => '<img src="{{ asset($logo) }}" alt="x">',
 ]);
 
 it('converts to the responsive component with --responsive', function () {

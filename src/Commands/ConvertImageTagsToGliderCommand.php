@@ -28,6 +28,12 @@ class ConvertImageTagsToGliderCommand extends Command
      */
     protected $description = 'Convert HTML img tags to Laravel Glider components (⚠️ USE AT YOUR OWN RISK - Run with --dry-run first)';
 
+    /**
+     * A src that is entirely `{{ asset('<string literal>') }}` — the only
+     * blade-echo form that is statically resolvable.
+     */
+    private const string STATIC_ASSET_PATTERN = '/^\{\{\s*asset\(\s*(["\'])([^"\']+)\1\s*\)\s*\}\}$/';
+
     private array $changedFiles = [];
     private array $totalChanges = [];
 
@@ -159,9 +165,10 @@ class ConvertImageTagsToGliderCommand extends Command
             }
 
             // No literal, statically-resolvable src: leave the tag untouched.
-            // Blade-echo srcs are dynamic, except a plain asset() wrapper,
-            // which cleanSrcValue() knows how to unwrap.
-            if ($src === null || (str_contains($src, '{{') && preg_match('/asset\(["\'](.+?)["\']/', $src) !== 1)) {
+            // Blade-echo srcs are dynamic, except when the whole expression is
+            // asset() of a pure string literal — concatenations and variables
+            // inside asset() are still dynamic.
+            if ($src === null || (str_contains($src, '{{') && preg_match(self::STATIC_ASSET_PATTERN, trim($src)) !== 1)) {
                 return $matches[0];
             }
 
@@ -231,9 +238,9 @@ class ConvertImageTagsToGliderCommand extends Command
      */
     private function cleanSrcValue(string $srcValue, string $imagePath): string
     {
-        // Remove asset() wrapper
-        if (preg_match('/asset\(["\'](.+?)["\']/', $srcValue, $matches)) {
-            $path = $matches[1];
+        // Remove asset() wrapper (only the pure string-literal form gets here)
+        if (preg_match(self::STATIC_ASSET_PATTERN, trim($srcValue), $matches)) {
+            $path = $matches[2];
             // Remove leading /images/ if present since glider handles this
             return ltrim(str_replace($imagePath, '', $path), '/');
         }
