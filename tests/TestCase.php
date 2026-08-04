@@ -23,6 +23,14 @@ class TestCase extends Orchestra
     {
         parent::setUp();
 
+        // The default glider.source (resource_path('assets')) must exist for
+        // PathValidator's realpath containment check — in a fresh checkout the
+        // skeleton doesn't ship it, which made every test exercising the
+        // default source order-dependent on whichever test created it first.
+        if (is_string(config('glider.source')) && ! is_dir(config('glider.source'))) {
+            mkdir(config('glider.source'), 0755, true);
+        }
+
         Factory::guessFactoryNamesUsing(
             fn (string $modelName) => 'Daikazu\\LaravelGlider\\Database\\Factories\\' . class_basename($modelName) . 'Factory'
         );
