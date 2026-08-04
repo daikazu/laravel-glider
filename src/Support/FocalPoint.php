@@ -5,7 +5,7 @@ declare(strict_types=1);
 namespace Daikazu\LaravelGlider\Support;
 
 /**
- * Parses a `focal-point` attribute value into a CSS `object-position` /
+ * Parses a `focus` attribute value into a CSS `object-position` /
  * `background-position` value.
  *
  * Accepts:

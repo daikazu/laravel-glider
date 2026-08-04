@@ -123,12 +123,12 @@ class BgResponsive extends Component
 
     /**
      * Get the background-position CSS value.
-     * Uses the focal-point attribute if provided, otherwise falls back to
+     * Uses the focus attribute if provided, otherwise falls back to
      * the position property.
      */
     public function getBackgroundPosition(): string
     {
-        return FocalPoint::parse($this->attributes->get('focal-point')) ?? $this->position ?? 'center';
+        return FocalPoint::parse($this->attributes->get('focus')) ?? $this->position ?? 'center';
     }
 
     /**

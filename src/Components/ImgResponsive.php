@@ -77,11 +77,11 @@ class ImgResponsive extends Component
     }
 
     /**
-     * Get the object-position CSS value from the focal-point attribute.
+     * Get the object-position CSS value from the focus attribute.
      */
     public function objectPosition(): ?string
     {
-        return FocalPoint::parse($this->attributes->get('focal-point'));
+        return FocalPoint::parse($this->attributes->get('focus'));
     }
 
     public function srcset(): ?string

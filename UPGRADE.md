@@ -92,6 +92,14 @@ A quick way to find every usage across your Blade views:
 grep -rl "x-glide-" resources/views
 ```
 
+**The `focal-point` attribute was renamed to `focus`** on all four
+components:
+
+```diff
+- <x-glider-img src="portrait.jpg" focal-point="top" glide-w="400" />
++ <x-glider-img src="portrait.jpg" focus="top" glide-w="400" />
+```
+
 **Background component DOM output also changed.** If your own CSS or
 JavaScript targets the rendered markup, update it:
 

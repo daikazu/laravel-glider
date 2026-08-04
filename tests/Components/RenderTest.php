@@ -22,12 +22,12 @@ it('renders x-glider-img with url, dimensions, and passthrough attributes', func
         ->not->toContain('glide-w');
 });
 
-it('renders x-glider-img focal-point as object-position style', function () {
-    $html = Blade::render('<x-glider-img src="test-tiny.jpg" glide-w="10" focal-point="top-right" />');
+it('renders x-glider-img focus as object-position style', function () {
+    $html = Blade::render('<x-glider-img src="test-tiny.jpg" glide-w="10" focus="top-right" />');
 
     expect($html)->toContain('object-fit: cover')
         ->toContain('object-position: 100% 0%')
-        ->not->toContain('focal-point=');
+        ->not->toContain('focus=');
 });
 
 it('renders x-glider-img-responsive with srcset and sizes bootstrap', function () {
@@ -62,8 +62,8 @@ it('appends the user style to the inline background style on x-glider-bg', funct
         ->and(substr_count($html, 'style='))->toBe(1);
 });
 
-it('renders x-glider-bg position, size, repeat, attachment, and focal-point props', function () {
-    $html = Blade::render('<x-glider-bg src="test-tiny.jpg" size="contain" repeat="repeat-x" attachment="fixed" focal-point="25,75">x</x-glider-bg>');
+it('renders x-glider-bg position, size, repeat, attachment, and focus props', function () {
+    $html = Blade::render('<x-glider-bg src="test-tiny.jpg" size="contain" repeat="repeat-x" attachment="fixed" focus="25,75">x</x-glider-bg>');
 
     expect($html)->toContain('background-size: contain')
         ->toContain('background-repeat: repeat-x')

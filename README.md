@@ -125,13 +125,13 @@ Control image positioning within its container using CSS:
 
 ```html
 <!-- Named positions -->
-<x-glider-img src="portrait.jpg" focal-point="top" glide-w="400" glide-h="300" />
+<x-glider-img src="portrait.jpg" focus="top" glide-w="400" glide-h="300" />
 
 <!-- Custom percentages (x, y) -->
-<x-glider-img src="photo.jpg" focal-point="75,25" glide-w="400" glide-h="300" />
+<x-glider-img src="photo.jpg" focus="75,25" glide-w="400" glide-h="300" />
 
 <!-- On backgrounds -->
-<x-glider-bg src="hero.jpg" focal-point="center" preset="hero">
+<x-glider-bg src="hero.jpg" focus="center" preset="hero">
     <h1>Content</h1>
 </x-glider-bg>
 ```
@@ -228,7 +228,7 @@ Basic image with transformations.
 
 **Attributes:**
 - `src` - Image path (required)
-- `focal-point` - CSS positioning (e.g., `top`, `75,25`)
+- `focus` - CSS positioning (e.g., `top`, `75,25`)
 - `glide-*` - Any Glide parameter (see [Parameters](#glide-parameters))
 - Standard HTML `<img>` attributes (alt, class, loading, etc.)
 
@@ -257,7 +257,7 @@ manipulation presets).
 
 **Attributes:**
 - `src` - Image path (required)
-- `focal-point` - CSS positioning
+- `focus` - CSS positioning
 - `position` - CSS background-position (default: `center`)
 - `size` - CSS background-size (default: `cover`)
 - `repeat` - CSS background-repeat (default: `no-repeat`)
@@ -275,7 +275,7 @@ Responsive background with media queries.
 - `src` - Image path (required)
 - `preset` - Background preset name (from `background_presets` config)
 - `breakpoints` - Custom breakpoint array
-- `focal-point` - CSS positioning for all breakpoints
+- `focus` - CSS positioning for all breakpoints
 - `position` / `size` / `repeat` / `attachment` - CSS background properties
   (same defaults as `<x-glider-bg>`)
 - `lazy` - Emit `data-bg-lazy`/`data-bg-src`/`data-bg-srcset` attributes
@@ -712,7 +712,7 @@ The package validates and sanitizes:
 - `size` attributes
 - `repeat` attributes
 - `attachment` attributes
-- `focal-point` values
+- `focus` values
 
 ### SSRF Protection
 

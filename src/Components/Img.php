@@ -50,7 +50,7 @@ class Img extends Component
     }
 
     /**
-     * Get the object-position CSS value from the focal-point attribute.
+     * Get the object-position CSS value from the focus attribute.
      *
      * Accepts formats:
      * - "50,50" or "50, 50" - x,y percentages (0-100)
@@ -66,7 +66,7 @@ class Img extends Component
      */
     public function objectPosition(): ?string
     {
-        return FocalPoint::parse($this->attributes->get('focal-point'));
+        return FocalPoint::parse($this->attributes->get('focus'));
     }
 
     /**

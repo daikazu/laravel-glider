@@ -220,12 +220,12 @@ it('resolves width() and height() from real intrinsic dimensions', function () {
     @unlink($testImagePath);
 });
 
-it('parses the focal-point attribute into a CSS object-position value', function () {
-    $component = createImgResponsive('test.jpg', null, ['focal-point' => 'center']);
+it('parses the focus attribute into a CSS object-position value', function () {
+    $component = createImgResponsive('test.jpg', null, ['focus' => 'center']);
     expect($component->objectPosition())->toBe('50% 50%');
 });
 
-it('returns null object-position when no focal-point attribute is present', function () {
+it('returns null object-position when no focus attribute is present', function () {
     $component = createImgResponsive('test.jpg');
     expect($component->objectPosition())->toBeNull();
 });

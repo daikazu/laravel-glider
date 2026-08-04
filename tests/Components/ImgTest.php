@@ -99,17 +99,17 @@ it('resolves width() and height() from real intrinsic dimensions', function () {
     @unlink($testImagePath);
 });
 
-it('returns null object-position when no focal-point attribute is present', function () {
+it('returns null object-position when no focus attribute is present', function () {
     $component = createImg('test.jpg');
     expect($component->objectPosition())->toBeNull();
 });
 
-it('parses the focal-point attribute into a CSS object-position value', function () {
-    $component = createImg('test.jpg', ['focal-point' => 'top-right']);
+it('parses the focus attribute into a CSS object-position value', function () {
+    $component = createImg('test.jpg', ['focus' => 'top-right']);
     expect($component->objectPosition())->toBe('100% 0%');
 });
 
-it('returns null object-position for an invalid focal-point value', function () {
-    $component = createImg('test.jpg', ['focal-point' => '150,50']);
+it('returns null object-position for an invalid focus value', function () {
+    $component = createImg('test.jpg', ['focus' => '150,50']);
     expect($component->objectPosition())->toBeNull();
 });

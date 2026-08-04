@@ -1,7 +1,7 @@
 {{-- Generate responsive background CSS (already sanitized in method) --}}
 {!! $generateBackgroundCSS() !!}
 
-<div {{ $attributes->except(['focal-point'])->whereDoesntStartWith('glide-')->merge(array_merge([
+<div {{ $attributes->except(['focus'])->whereDoesntStartWith('glide-')->merge(array_merge([
     'class' => $getCSSClass(),
     'data-glider-bg' => 'true',
     'data-glider-src' => $src,
