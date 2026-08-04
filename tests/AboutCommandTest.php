@@ -7,6 +7,7 @@ use Daikazu\LaravelGlider\Support\FilesystemResolver;
 it('registers a Glider section in artisan about', function () {
     $this->artisan('about')
         ->expectsOutputToContain('Glider')
+        ->expectsOutputToContain('Base URL')
         ->expectsOutputToContain('Signed URLs')
         ->expectsOutputToContain('On-the-fly')
         ->assertSuccessful();

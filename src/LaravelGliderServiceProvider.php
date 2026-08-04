@@ -71,10 +71,11 @@ class LaravelGliderServiceProvider extends PackageServiceProvider
     protected function registerAboutCommand(): void
     {
         AboutCommand::add('Glider', fn (): array => [
-            'Version' => InstalledVersions::getPrettyVersion('daikazu/laravel-glider') ?? 'unknown',
-            'Driver'  => (string) config('glider.driver'),
-            'Source'  => app(FilesystemResolver::class)->describe(config('glider.source')),
-            'Cache'   => app(FilesystemResolver::class)->describe(config('glider.cache')),
+            'Version'  => InstalledVersions::getPrettyVersion('daikazu/laravel-glider') ?? 'unknown',
+            'Driver'   => (string) config('glider.driver'),
+            'Base URL' => '/' . trim((string) config('glider.base_url'), '/'),
+            'Source'   => app(FilesystemResolver::class)->describe(config('glider.source')),
+            'Cache'    => app(FilesystemResolver::class)->describe(config('glider.cache')),
 
             'Signed URLs' => config('glider.secure', true)
                 ? '<fg=green;options=bold>ENABLED</>'
