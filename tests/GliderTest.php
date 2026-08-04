@@ -348,6 +348,35 @@ test('it can serve image with ñ character via HTTP', function () {
     $response->assertStatus(200);
 });
 
+test('it serves images with spaces and url-special characters via HTTP, signatures on', function (string $filename) {
+    $this->withoutExceptionHandling();
+
+    config(['glider.source' => __DIR__ . '/fixtures', 'glider.secure' => true]);
+
+    $fixture = __DIR__ . '/fixtures/' . $filename;
+    @mkdir(dirname($fixture), 0755, true);
+    copy(__DIR__ . '/fixtures/test-tiny.jpg', $fixture);
+
+    try {
+        $url = app(Glider::class)->getUrl($filename, ['w' => 10]);
+
+        $this->get($url)->assertOk();
+    } finally {
+        @unlink($fixture);
+        if (dirname($fixture) !== __DIR__ . '/fixtures') {
+            @rmdir(dirname($fixture));
+        }
+    }
+})->with([
+    'space in name'    => 'hero image (1).jpg',
+    'space in dir'     => 'summer 2024/beach day.jpg',
+    'percent in name'  => '50% off.jpg',
+    'plus in name'     => 'a+b.jpg',
+    'hash in name'     => 'img#1.jpg',
+    'ampersand name'   => 'file&name.jpg',
+    'brackets in name' => 'photo[1].jpg',
+]);
+
 test('it can serve regular ASCII image via HTTP', function () {
     $this->withoutExceptionHandling();
 

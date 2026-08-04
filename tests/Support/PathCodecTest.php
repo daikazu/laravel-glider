@@ -40,10 +40,17 @@ it('round-trips names containing tildes, dots, and unicode', function (string $p
 
     expect($parsed['path'])->toBe($path);
 })->with([
-    'tilde in name'   => 'files/my~archive.jpg',
-    'dots in name'    => 'files/photo.v2.final.jpg',
-    'unicode name'    => 'fixtures/café-image.jpg',
-    'apostrophe name' => "fixtures/l'apostrophe.jpg",
+    'tilde in name'    => 'files/my~archive.jpg',
+    'dots in name'     => 'files/photo.v2.final.jpg',
+    'unicode name'     => 'fixtures/café-image.jpg',
+    'apostrophe name'  => "fixtures/l'apostrophe.jpg",
+    'space in name'    => 'files/hero image (1).jpg',
+    'space in dir'     => 'summer 2024/beach day.jpg',
+    'percent in name'  => 'files/50% off.jpg',
+    'plus in name'     => 'files/a+b.jpg',
+    'hash in name'     => 'files/img#1.jpg',
+    'ampersand name'   => 'files/file&name.jpg',
+    'brackets in name' => 'files/photo[1].jpg',
 ]);
 
 it('round-trips param values containing slashes, underscores, and hyphens', function () {
