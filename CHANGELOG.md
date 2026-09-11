@@ -2,6 +2,13 @@
 
 All notable changes to `laravel-glider` will be documented in this file.
 
+## v4.0.1 - 2026-09-11
+
+### Fixed
+
+- Allow `guzzlehttp/guzzle` `^7.8 || ^8.0` so the package installs on fresh Laravel 13 apps that lock Guzzle 8 (#25). The tagged v4.0.0 release only permitted Guzzle 7.
+- CI now also runs the test matrix on Windows.
+
 ## v4.0.0 - 2026-08-04
 
 See [UPGRADE.md](UPGRADE.md) for a full v3 → v4 migration guide.
