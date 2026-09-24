@@ -2,6 +2,16 @@
 
 All notable changes to `laravel-glider` will be documented in this file.
 
+## v4.1.0 - 2026-09-24
+
+### Added
+
+- Laravel Boost support: Glider ships a guideline and a `glider-development` skill that Boost installs into your app (#27).
+
+### Fixed
+
+- README and config examples that used `<x-glider-bg>` with `preset`/`breakpoints`, which only `<x-glider-bg-responsive>` supports.
+
 ## v4.0.1 - 2026-09-11
 
 ### Fixed
@@ -225,7 +235,6 @@ Performance
 - Better caching strategies
 - Optimized URL generation
 - Reduced memory usage for large image sets
-
 Developer Experience
 
 - IDE Support: Full PhpDoc annotations and autocomplete
