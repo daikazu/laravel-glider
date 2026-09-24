@@ -2,6 +2,16 @@
 
 All notable changes to `laravel-glider` will be documented in this file.
 
+## Unreleased
+
+### Added
+
+- Laravel Boost support: a core guideline (`resources/boost/guidelines/core.md`) and a `glider-development` skill (`resources/boost/skills/glider-development/SKILL.md`) that Boost installs into apps using Glider.
+
+### Fixed
+
+- README and `config/glider.php` examples used `<x-glider-bg>` with `preset`/`breakpoints`, which only `<x-glider-bg-responsive>` supports. The Quick Start responsive background example also had a broken self-closing tag.
+
 ## v4.0.1 - 2026-09-11
 
 ### Fixed

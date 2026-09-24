@@ -78,11 +78,7 @@ The cache directory is created automatically with `.gitignore` added.
 ### Responsive Background
 
 ```html
-<x-glider-bg-responsive
-    src="banner.jpg"
-    glide-w="1440"
-    glide-h="600"
-/>
+<x-glider-bg-responsive src="banner.jpg" preset="hero">
     <h1>Content</h1>
 </x-glider-bg-responsive>
 ```
@@ -135,7 +131,7 @@ Control image positioning within its container using CSS:
 <x-glider-img src="photo.jpg" focus="75,25" glide-w="400" glide-h="300" />
 
 <!-- On backgrounds -->
-<x-glider-bg src="hero.jpg" focus="center" preset="hero">
+<x-glider-bg src="hero.jpg" focus="center" glide-preset="hero">
     <h1>Content</h1>
 </x-glider-bg>
 ```
@@ -166,10 +162,11 @@ Use in components:
 
 ### Background Images
 
-Create responsive backgrounds with automatic media queries:
+`<x-glider-bg-responsive>` generates one image per breakpoint with media
+queries. Pass a `preset` from `background_presets` in config:
 
 ```html
-<x-glider-bg
+<x-glider-bg-responsive
     src="hero.jpg"
     preset="hero"
     position="center top"
@@ -178,13 +175,13 @@ Create responsive backgrounds with automatic media queries:
     <div class="content">
         <h1>Hero Title</h1>
     </div>
-</x-glider-bg>
+</x-glider-bg-responsive>
 ```
 
 **Custom breakpoints:**
 
 ```html
-<x-glider-bg
+<x-glider-bg-responsive
     src="banner.jpg"
     :breakpoints="[
         'xs' => ['w' => 768, 'h' => 300],
@@ -194,8 +191,16 @@ Create responsive backgrounds with automatic media queries:
     <div class="content">
         <h1>Hero Title</h1>
     </div>
-</x-glider-bg>
+</x-glider-bg-responsive>
 ```
+
+With neither `preset` nor `breakpoints`, built-in breakpoints from 480px to
+1920px wide are used. `glide-*` attributes apply to every breakpoint, but a
+breakpoint's own params (such as `w`) take precedence.
+
+For a single, non-responsive background, use `<x-glider-bg>` with
+`glide-*` attributes or `glide-preset` (a regular preset, not a background
+preset).
 
 **Background presets** in config:
 
@@ -580,6 +585,19 @@ speed even on ephemeral infrastructure.
 
 All three use the same package configuration surface — they differ only in
 env values and where `glider:build` runs.
+
+## AI Assistance (Laravel Boost)
+
+Glider ships a [Laravel Boost](https://github.com/laravel/boost) guideline
+and a `glider-development` skill, so AI coding agents use the components,
+presets, commands, and security settings correctly. If your app uses Boost,
+select `daikazu/laravel-glider` when Boost lists packages with guidelines
+and skills:
+
+```bash
+php artisan boost:install   # new Boost setup
+php artisan boost:update    # existing setup: prompts for newly discovered packages
+```
 
 ## Requirements
 
