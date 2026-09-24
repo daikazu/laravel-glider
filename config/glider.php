@@ -412,10 +412,10 @@ return [
     |--------------------------------------------------------------------------
     |
     | Define responsive background image configurations for the
-    | <x-glider-bg> component. Each preset contains breakpoint definitions
-    | with their corresponding image manipulation parameters.
+    | <x-glider-bg-responsive> component. Each preset contains breakpoint
+    | definitions with their corresponding image manipulation parameters.
     |
-    | Usage: <x-glider-bg src="hero.jpg" preset="hero" />
+    | Usage: <x-glider-bg-responsive src="hero.jpg" preset="hero" />
     |
     | Breakpoints can use named breakpoints (xs, sm, md, lg, xl) or
     | pixel values (320, 768, 1024, etc.)
