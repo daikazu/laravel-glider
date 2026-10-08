@@ -1,6 +1,5 @@
 <picture>
-   <source media="(prefers-color-scheme: dark)" srcset="art/header-dark.png">
-   <img alt="Logo for Glider" src="art/header-light.png">
+   <img alt="Logo for Glider" src="art/glider-header.jpeg">
 </picture>
 
 [![Latest Version on Packagist](https://img.shields.io/packagist/v/daikazu/laravel-glider.svg?style=flat-square)](https://packagist.org/packages/daikazu/laravel-glider)
